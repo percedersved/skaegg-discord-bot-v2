@@ -1,0 +1,6 @@
+{
+  "type": 1,
+  "name": "bolagetöppet",
+  "description": "Visar öppettider för Bolaget i Norrtälje",
+  "autocomplete": true
+}

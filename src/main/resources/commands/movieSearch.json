@@ -1,0 +1,14 @@
+{
+  "type": 1,
+  "name": "film",
+  "description": "Search for a film in OMDB database",
+  "autocomplete": true,
+  "options": [
+    {
+      "name": "title",
+      "description": "Movie title to search for",
+      "type": 3,
+      "required": true
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "type": 1,
+  "name": "ping",
+  "description": "Pong!",
+  "autocomplete": true
+}

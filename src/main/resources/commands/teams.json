@@ -1,0 +1,14 @@
+{
+  "type": 1,
+  "name": "lag",
+  "description": "Sätter ihop 2 lag av angivna deltagare",
+  "autocomplete": true,
+  "options": [
+    {
+      "name": "deltagare",
+      "description": "Kommaseparerad lista av deltagare",
+      "type": 3,
+      "required": true
+    }
+  ]
+}

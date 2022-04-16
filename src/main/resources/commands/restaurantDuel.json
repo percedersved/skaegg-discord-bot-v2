@@ -1,0 +1,14 @@
+{
+  "type": 1,
+  "name": "restaurangduell",
+  "description": "Rösta på 2 slumpmässiga restauranger. Default i Norrtälje. Möjligt att ange annan plats",
+  "autocomplete": true,
+  "options": [
+    {
+      "name": "plats",
+      "description": "Plats att söka restaurang på",
+      "type": 3,
+      "required": false
+    }
+  ]
+}

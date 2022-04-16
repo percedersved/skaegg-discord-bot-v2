@@ -1,0 +1,6 @@
+{
+  "type": 1,
+  "name": "lagvoice",
+  "description": "Sätter ihop 2 lag från deltagare i voice kanal",
+  "autocomplete": true
+}

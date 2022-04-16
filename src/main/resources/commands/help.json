@@ -1,0 +1,6 @@
+{
+  "type": 1,
+  "name": "hjälp",
+  "description": "Displays information about all bot commands",
+  "autocomplete": true
+}

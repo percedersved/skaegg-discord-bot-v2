@@ -1,0 +1,6 @@
+{
+  "type": 1,
+  "name": "codenames",
+  "description": "Genererar länk till en codenames session på horsepaste",
+  "autocomplete": true
+}

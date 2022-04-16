@@ -1,0 +1,6 @@
+{
+  "type": 1,
+  "name": "fredag",
+  "description": "Är det fredag idag?",
+  "autocomplete": true
+}

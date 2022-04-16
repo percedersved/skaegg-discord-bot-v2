@@ -1,0 +1,14 @@
+{
+  "type": 1,
+  "name": "restaurang",
+  "description": "Tips på restaurang. Default i Norrtälje. Möjligt att ange annan plats",
+  "autocomplete": true,
+  "options": [
+    {
+      "name": "plats",
+      "description": "Plats att söka restaurang på",
+      "type": 3,
+      "required": false
+    }
+  ]
+}

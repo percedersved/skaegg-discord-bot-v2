@@ -1,0 +1,65 @@
+{
+  "type": 1,
+  "name": "nedräkning",
+  "description": "Nedräkning",
+  "autocomplete": true,
+  "options": [
+    {
+      "name": "-",
+      "description": "Typ",
+      "type": 2,
+      "options": [
+        {
+          "name": "visa",
+          "description": "Visa hur lång tid det är kvar på en nedräkning",
+          "type": 1,
+          "options": [
+            {
+              "name": "namn",
+              "description": "Namn på den nedräkning du vill visa",
+              "type": 3,
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "skapa",
+          "description": "Lägg till ny nedräkning",
+          "type": 1,
+          "options": [
+            {
+              "name": "namn",
+              "description": "Namn du vill ge nedräkningen",
+              "type": 3,
+              "required": true
+            },
+            {
+              "name": "datum",
+              "description": "Datum du vill ge nedräkningen, enligt yyyy-MM-dd HH:mm",
+              "type": 3,
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "lista",
+          "description": "Lista alla nedräkningar",
+          "type": 1
+        },
+        {
+          "name": "tabort",
+          "description": "Ta bort en befintlig nedräkning",
+          "type": 1,
+          "options": [
+            {
+              "name": "id",
+              "description": "ID på nedräkning att ta bort",
+              "type": 3,
+              "required": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
