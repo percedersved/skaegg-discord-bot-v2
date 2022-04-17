@@ -32,7 +32,7 @@ public class RandomRestaurantClient {
     public List<Restaurant> process(String searchWord, int numberOfResults) {
         // URL encode the city name
         String searchEncoded = URLEncoder.encode(searchWord, StandardCharsets.UTF_8);
-        // If no extra parameter is added to the command nothing will be added to the URL, if a city is added as a parameter that will be added in the end of the URL
+
         final String url = restaurantUrl +
                 "/" +
                 searchEncoded +
