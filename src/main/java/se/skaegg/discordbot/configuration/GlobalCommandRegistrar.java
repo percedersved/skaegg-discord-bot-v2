@@ -1,11 +1,13 @@
 package se.skaegg.discordbot.configuration;
 
 import discord4j.common.JacksonResources;
+import discord4j.discordjson.json.ApplicationCommandData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.RestClient;
 import discord4j.rest.service.ApplicationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.io.Resource;
@@ -18,6 +20,9 @@ import java.util.List;
 
 @Component
 public class GlobalCommandRegistrar implements ApplicationRunner {
+
+    @Value("#{'${serverIds}'.split(',')}")
+    List<String> serverIds;
 
     private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
@@ -51,19 +56,16 @@ public class GlobalCommandRegistrar implements ApplicationRunner {
         /* Bulk overwrite commands. This is now idempotent, so it is safe to use this even when only 1 command
         is changed/added/removed
         */
-        // Since the bot only lives on 2 servers we run with GuildCommands instead of Global. This is for clean test server
-        long cleanGuildId = 841042241107394650L;
-        applicationService.bulkOverwriteGuildApplicationCommand(applicationId, cleanGuildId, commands)
-                .doOnNext(ignore -> LOGGER.debug("Successfully registered Global Command"))
-                .doOnError(e -> LOGGER.error("Failed to register global commands", e))
-                .subscribe();
+        // Since the bot just lives on a few servers we're using guild commands instead of global. Go through list from application.properties
+        // of serverIds and register the commands to those servers
+        for (String serverId : serverIds) {
+            long sId = Long.parseLong(serverId);
+            applicationService.bulkOverwriteGuildApplicationCommand(applicationId, sId, commands)
+                    .doOnNext(ignore -> LOGGER.debug("Successfully registered Guild Command"))
+                    .doOnError(e -> LOGGER.error("Failed to register guild commands", e))
+                    .subscribe();
+        }
 
-        // Skaegg server
-//        long skaeggGuildId = 841042241107394650L;
-//        applicationService.bulkOverwriteGuildApplicationCommand(applicationId, skaeggGuildId, commands)
-//                .doOnNext(ignore -> LOGGER.debug("Successfully registered Global Command"))
-//                .doOnError(e -> LOGGER.error("Failed to register global commands", e))
-//                .subscribe();
 
 
 //        // Delete global command
