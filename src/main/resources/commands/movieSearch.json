@@ -1,12 +1,12 @@
 {
   "type": 1,
   "name": "film",
-  "description": "Search for a film in OMDB database",
+  "description": "Sök efter film i OMDBs databas",
   "autocomplete": true,
   "options": [
     {
-      "name": "title",
-      "description": "Movie title to search for",
+      "name": "titel",
+      "description": "Filmtitel att söka efter",
       "type": 3,
       "required": true
     }
