@@ -6,7 +6,6 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
-import discord4j.core.object.component.ActionComponent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.SelectMenu;
 import discord4j.core.object.entity.Message;
@@ -21,7 +20,6 @@ import se.skaegg.discordbot.dto.OmdbMovie;
 import se.skaegg.discordbot.dto.OmdbSearchObject;
 import se.skaegg.discordbot.dto.OmdbSearchResult;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,7 +40,10 @@ public class MovieSearch implements SlashCommand{
     @Override
     public Mono<Void> handle(ChatInputInteractionEvent event) {
 
-        event.deferReply().subscribe();
+        event.deferReply()
+                .withEphemeral(true)
+                .subscribe();
+
         return searchMovie(event).then();
     }
 
@@ -79,7 +80,8 @@ public class MovieSearch implements SlashCommand{
 
         List<SelectMenu.Option> titles = new ArrayList<>();
         for (OmdbSearchResult result : searchResults) {
-            titles.add(SelectMenu.Option.of(result.getTitle(), result.getImdbID()));
+            titles.add(SelectMenu.Option.of(result.getTitle(), result.getImdbID())
+                    .withDescription(result.getType() + " - " + result.getYear()));
         }
 
         SelectMenu selectMenu = SelectMenu.of("movies", titles)
@@ -87,10 +89,10 @@ public class MovieSearch implements SlashCommand{
                 .withMinValues(1)
                 .withPlaceholder("Välj film");
 
-        return event.createFollowup()
-            .withEphemeral(true)
+        return event.editReply()
             .withComponents(ActionRow.of(selectMenu));
     }
+
 
     public Mono<Message> getMovie(SelectMenuInteractionEvent event, String apiToken) {
         String imdbId = event.getValues().get(0);
@@ -132,7 +134,7 @@ public class MovieSearch implements SlashCommand{
             embed = EmbedCreateSpec.builder()
                     .color(Color.of(90, 130, 180))
                     .title(title)
-                    .image(imageUrl.equals("N/A") ? "http://google.com" : imageUrl)
+                    .image(imageUrl.equals("N/A") ? "https://freesvg.org/img/skotan-No-sign.png" : imageUrl)
                     .addField("Handling", description, true)
                     .addField("Övrigt", otherInfo, true)
                     .url(imdbLink)

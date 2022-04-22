@@ -23,13 +23,15 @@ public class SelectMenuListener {
 
         if (event.getCustomId().equals("movies")) {
             // Defer reply to give the bot some time to get the movie from OMDB
-            event.deferReply().subscribe();
+            event.deferReply()
+                    .subscribe();
+
             return new MovieSearch().getMovie(event, apiToken);
+
         }
             else {
                 return Mono.empty();
             }
     }
-
 }
 
