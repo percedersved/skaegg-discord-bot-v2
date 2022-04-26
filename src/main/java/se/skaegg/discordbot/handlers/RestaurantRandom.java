@@ -39,7 +39,7 @@ public class RestaurantRandom implements SlashCommand {
 
     private Mono<Message> getRestaurant(ChatInputInteractionEvent event) {
 
-        Optional<String> searchWordOpt = event.getOption("title")
+        Optional<String> searchWordOpt = event.getOption("plats")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
 
