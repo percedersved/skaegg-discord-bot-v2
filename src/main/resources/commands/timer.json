@@ -7,15 +7,7 @@
     {
       "name": "visa",
       "description": "Visa hur lång tid det är kvar på en nedräkning",
-      "type": 1,
-      "options": [
-        {
-          "name": "namn",
-          "description": "Namn på den nedräkning du vill visa",
-          "type": 3,
-          "required": true
-        }
-      ]
+      "type": 1
     },
     {
       "name": "skapa",

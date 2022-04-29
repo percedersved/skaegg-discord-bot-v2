@@ -2,10 +2,15 @@ package se.skaegg.discordbot.handlers;
 
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
+import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.SelectMenu;
+import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import se.skaegg.discordbot.jpa.TimerEntity;
@@ -14,13 +19,15 @@ import se.skaegg.discordbot.jpa.TimerRepository;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-//@Service Tidigare var det denna annotering
+
 @Component
 public class Timer implements SlashCommand {
 
+    @Autowired
     TimerRepository timerRepository;
 
     public Timer(TimerRepository timerRepository) {
@@ -42,7 +49,7 @@ public class Timer implements SlashCommand {
 
         switch (subCommandName) {
             case "visa":
-                return checkTimer(event, subCommandOptions);
+                return checkTimer(event);
             case "skapa":
                 return createTimer(event, subCommandOptions);
             case "lista":
@@ -96,46 +103,66 @@ public class Timer implements SlashCommand {
     }
 
 
-    private Mono<Void> checkTimer(ChatInputInteractionEvent event, List<ApplicationCommandInteractionOption> options) {
+    private Mono<Void> checkTimer(ChatInputInteractionEvent event) {
 
-        @SuppressWarnings("OptionalGetWithoutIsPresent") // Option is required, will always be present
-        String timerName = options.get(0).getValue().get().getRaw();
+        event.deferReply().subscribe();
 
-        List<TimerEntity> timers = timerRepository.findByKeyIgnoreCase(timerName);
+        List<TimerEntity> timers = timerRepository.findByProcessed(false);
         String timeLeft = null;
         TimerEntity timer = null;
         long diff = 0;
 
-
+        List<SelectMenu.Option> timerOptions = new ArrayList<>();
         if (!timers.isEmpty()) {
-            timer = timers.get(0);
-            LocalDateTime expirationDate = timer.getTimeDateTime();
-
-            Duration duration = Duration.between(LocalDateTime.now(), expirationDate);
-            diff = duration.toMinutes();
-
-
-            if (diff >= 1440) {
-                timeLeft = diff / 24 / 60 + " dagar, " + diff / 60 % 24 + "h, " + diff % 60 + "m";
-            } else if (diff >= 60) {
-                timeLeft = diff / 60 + "h, " + diff % 60 + "m";
-            } else {
-                timeLeft = diff + "m";
+            // Add all timernames from database to separate list
+            for (TimerEntity t : timers) {
+                timerOptions.add(SelectMenu.Option.of(t.getKey(), t.getId().toString()));
             }
-            timeLeft = timeLeft + " kvar till " + timer.getKey();
         }
+
+        return event.editReply()
+                .withComponents(ActionRow.of(SelectMenu.of("timers", timerOptions))).then();
+    }
+
+    public Mono<Message> showTimer(SelectMenuInteractionEvent event) {
+        String timerId = event.getValues().get(0);
+        TimerEntity timer = timerRepository.getById(Integer.parseInt(timerId));
+
+        LocalDateTime expirationDate = timer.getTimeDateTime();
+
+        Duration duration = Duration.between(LocalDateTime.now(), expirationDate);
+        long diff = duration.toMinutes();
+        String timeLeft;
+
+
+        if (diff >= 1440) {
+            timeLeft = diff / 24 / 60 + " dagar, " + diff / 60 % 24 + "h, " + diff % 60 + "m";
+        } else if (diff >= 60) {
+            timeLeft = diff / 60 + "h, " + diff % 60 + "m";
+        } else {
+            timeLeft = diff + "m";
+        }
+        timeLeft = timeLeft + " kvar till " + timer.getKey();
 
 
         if (diff == 0 || timer == null) {
-            return event.reply()
-                    .withContent("Det finns ingen nedräkning med det namnet");
+            event.reply()
+                    .withContent("Det finns ingen nedräkning med det namnet").subscribe();
         } else if (diff >= 0) {
-            return event.reply()
-                    .withContent(timeLeft);
+            event.reply()
+                    .withContent(timeLeft).subscribe();
         } else {
-            return event.reply()
-                    .withContent("Nedräkning passerad");
+            event.reply()
+                    .withContent("Nedräkning passerad").subscribe();
         }
+        event.getInteraction()
+                .getMessage()
+                .get()
+                .edit()
+                .withComponents(ActionRow.of(SelectMenu.of("empty", SelectMenu.Option.ofDefault(timer.getKey(), "dead"))
+                        .disabled()))
+                .subscribe();
+        return Mono.empty();
     }
 
 
