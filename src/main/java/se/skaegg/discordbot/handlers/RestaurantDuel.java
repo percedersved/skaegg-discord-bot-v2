@@ -43,18 +43,16 @@ public class RestaurantDuel implements SlashCommand {
 
     private Mono<Message> getRestaurant(ChatInputInteractionEvent event) {
 
-        Optional<String> searchWordOpt = event.getOption("title")
+        Optional<String> searchWordOpt = event.getOption("plats")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
 
+        String searchWordOptVal = searchWordOpt.orElse("Norrtälje");
+
         String whiteSpace = "\u200B";
 
-        List<Restaurant> restaurantList;
-        if (searchWordOpt.isEmpty()) {
-            restaurantList = new RandomRestaurantClient(token, restaurantUrl).process("Norrtälje", 2);
-        } else {
-            restaurantList = new RandomRestaurantClient(token, restaurantUrl).process(searchWordOpt.get(), 2);
-        }
+        List<Restaurant> restaurantList = new RandomRestaurantClient(token, restaurantUrl).process(searchWordOptVal, 2);
+
 
         Restaurant restaurantOne = restaurantList.get(0);
         Restaurant restaurantTwo = restaurantList.get(1);
@@ -120,8 +118,11 @@ public class RestaurantDuel implements SlashCommand {
         List<EmbedCreateSpec> embeds = List.of(embedROne, embedRTwo);
         Possible<Optional<List<EmbedCreateSpec>>> embeds2 = Possible.of(Optional.of(List.of(embedROne, embedRTwo)));
 
+        // Capitalize first letter to use in reply
+        String searchWordOptValCapitalized = searchWordOptVal.substring(0, 1).toUpperCase() + searchWordOptVal.substring(1);
+
         return event.createFollowup()
-                .withContent("**Var vill du äta? :crossed_swords:**")
+                .withContent("**Var vill du äta i " + searchWordOptValCapitalized + " :crossed_swords:**")
                 .withEmbeds(embeds);
     }
 }
