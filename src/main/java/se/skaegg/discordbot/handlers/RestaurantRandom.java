@@ -1,5 +1,6 @@
 package se.skaegg.discordbot.handlers;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
@@ -39,21 +40,15 @@ public class RestaurantRandom implements SlashCommand {
 
     private Mono<Message> getRestaurant(ChatInputInteractionEvent event) {
 
-        Optional<String> searchWordOpt = event.getOption("title")
+        Optional<String> searchWordOpt = event.getOption("plats")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
 
+        String searchWordOptVal = searchWordOpt.orElse("Norrtälje");
+
         String whiteSpace = "\u200B";
 
-        List<Restaurant> restaurantList;
-        if (searchWordOpt.isEmpty()) {
-            restaurantList = new RandomRestaurantClient(token, restaurantUrl).process();
-
-        }
-        else {
-            restaurantList = new RandomRestaurantClient(token, restaurantUrl).process(searchWordOpt.get());
-        }
-
+        List<Restaurant> restaurantList = new RandomRestaurantClient(token, restaurantUrl).process(searchWordOptVal);
         Restaurant restaurant = restaurantList.get(0);
 
         String leftColumnEmbed =
@@ -86,8 +81,11 @@ public class RestaurantRandom implements SlashCommand {
                 .footer(footerEmbed, "")
                 .build();
 
+        // Capitalize first letter to use in reply
+        String searchWordOptValCapitalized = searchWordOptVal.substring(0, 1).toUpperCase() + searchWordOptVal.substring(1);
 
         return event.createFollowup()
+                .withContent("**Sökord: " + searchWordOptValCapitalized + "**")
                 .withEmbeds(embed);
     }
 }

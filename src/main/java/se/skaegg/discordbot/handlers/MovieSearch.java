@@ -40,9 +40,7 @@ public class MovieSearch implements SlashCommand{
     @Override
     public Mono<Void> handle(ChatInputInteractionEvent event) {
 
-        event.deferReply()
-                .withEphemeral(true)
-                .subscribe();
+        event.deferReply().subscribe();
 
         return searchMovie(event).then();
     }
@@ -142,12 +140,22 @@ public class MovieSearch implements SlashCommand{
         }
 
         if (successfull.equals("False")) {
-            return event.createFollowup()
-                    .withContent("Din sökning gav ingen träff. No movie for you! <:koerdittjaeklaboegrace:814187249288872016>");
+            event.createFollowup()
+                    .withContent("Din sökning gav ingen träff. No movie for you! <:koerdittjaeklaboegrace:814187249288872016>")
+                    .subscribe();
         }
         else {
-            return event.createFollowup()
-                    .withEmbeds(embed);
+            event.createFollowup()
+                    .withEmbeds(embed)
+                    .subscribe();
         }
+        return event.getInteraction()
+                .getMessage()
+                .get()
+                .edit()
+                .withComponents(ActionRow.of(SelectMenu.of("disabled", SelectMenu.Option.ofDefault(movie.getTitle(), "disabled"))
+                        .disabled()));
+
+
     }
 }

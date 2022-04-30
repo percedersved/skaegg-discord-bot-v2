@@ -5,10 +5,12 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.LayoutComponent;
 import discord4j.core.object.component.SelectMenu;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.discordjson.json.ComponentData;
 import discord4j.rest.util.Color;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -159,7 +161,7 @@ public class Timer implements SlashCommand {
                 .getMessage()
                 .get()
                 .edit()
-                .withComponents(ActionRow.of(SelectMenu.of("empty", SelectMenu.Option.ofDefault(timer.getKey(), "dead"))
+                .withComponents(ActionRow.of(SelectMenu.of("disabled", SelectMenu.Option.ofDefault(timer.getKey(), "disabled"))
                         .disabled()))
                 .subscribe();
         return Mono.empty();
