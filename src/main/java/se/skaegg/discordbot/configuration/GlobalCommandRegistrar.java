@@ -1,7 +1,6 @@
 package se.skaegg.discordbot.configuration;
 
 import discord4j.common.JacksonResources;
-import discord4j.discordjson.json.ApplicationCommandData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.RestClient;
 import discord4j.rest.service.ApplicationService;
