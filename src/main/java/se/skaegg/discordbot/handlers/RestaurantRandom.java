@@ -26,6 +26,9 @@ public class RestaurantRandom implements SlashCommand {
     @Value("${restaurant.api.url}")
     private String restaurantUrl;
 
+    @Value("${restaurant.random.replytext}")
+    private String replytext;
+
     @Override
     public String getName() {
         return "restaurang";
@@ -85,7 +88,7 @@ public class RestaurantRandom implements SlashCommand {
         String searchWordOptValCapitalized = searchWordOptVal.substring(0, 1).toUpperCase() + searchWordOptVal.substring(1);
 
         return event.createFollowup()
-                .withContent("**Sökord: " + searchWordOptValCapitalized + "**")
+                .withContent(String.format(replytext, searchWordOptValCapitalized))
                 .withEmbeds(embed);
     }
 }

@@ -26,6 +26,9 @@ public class RestaurantDuel implements SlashCommand {
     @Value("${restaurant.api.url}")
     private String restaurantUrl;
 
+    @Value("${restaurant.duel.replytext}")
+    private String replytext;
+
 
     @Override
     public String getName() {
@@ -122,7 +125,7 @@ public class RestaurantDuel implements SlashCommand {
         String searchWordOptValCapitalized = searchWordOptVal.substring(0, 1).toUpperCase() + searchWordOptVal.substring(1);
 
         return event.createFollowup()
-                .withContent("**Var vill du äta i " + searchWordOptValCapitalized + " :crossed_swords:**")
+                .withContent(String.format(replytext, searchWordOptValCapitalized))
                 .withEmbeds(embeds);
     }
 }
