@@ -1,18 +1,14 @@
 package se.skaegg.discordbot.clients;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.netty.http.client.HttpClient;
 import se.skaegg.discordbot.dto.OmdbMovie;
 import se.skaegg.discordbot.dto.OmdbSearchObject;
-import se.skaegg.discordbot.dto.OmdbSearchResult;
 
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
-import java.util.List;
 
 public class OmdbClient {
 

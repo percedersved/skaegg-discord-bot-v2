@@ -3,12 +3,14 @@ package se.skaegg.discordbot.clients;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import reactor.netty.http.client.HttpClient;
-import org.springframework.beans.factory.annotation.Value;
 
 public class TenorRandomClient
 {
-    @Value("${tenor.api.token}")
     String token;
+
+    public TenorRandomClient(String token) {
+        this.token = token;
+    }
 
     public String process(final String searchWord) {
 

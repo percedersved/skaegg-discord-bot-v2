@@ -5,6 +5,7 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.reaction.ReactionEmoji;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import se.skaegg.discordbot.clients.TenorRandomClient;
@@ -17,6 +18,8 @@ import java.time.LocalDateTime;
 @Component
 public class Friday implements SlashCommand{
 
+    @Value("${tenor.api.token}")
+    String token;
 
     @Override
     public String getName() {
@@ -50,7 +53,7 @@ public class Friday implements SlashCommand{
         EmbedCreateSpec itsFridayEmbed = EmbedCreateSpec.builder()
                 .color(Color.of(90, 130, 180))
                 .title("Det är FREDAG!!")
-                .image(new TenorRandomClient().process("its%20friday"))
+                .image(new TenorRandomClient(token).process("its%20friday"))
                 .description("(╯°□°）╯︵ ┻━┻")
                 .build();
 
