@@ -30,7 +30,8 @@ public class Help implements SlashCommand{
                 "`/nedräkning lista` - Listar nedräkningar med namn och ID\n" +
                 "`/nedräkning tabort [ID]` - Tar bort nedräkning\n" +
                 "`/restaurang` - Tips på restaurang. Default är i Norrtälje. Möjligt att lägga till annan stad eller plats som parameter\n" +
-                "`/restaurangduell` - Rösta på 2 olika slumpmässiga restauranger. Default är i Norrtälje. Möjligt att lägga till annan stad eller plats som parameter";
+                "`/restaurangduell` - Rösta på 2 olika slumpmässiga restauranger. Default är i Norrtälje. Möjligt att lägga till annan stad eller plats som parameter" +
+                "`/statistik` - Visar statistik för kommandon och vilka användare som använt boten mest";
 
         EmbedCreateSpec embed = EmbedCreateSpec.builder()
                 .color(Color.of(90, 130, 180))
