@@ -1,0 +1,28 @@
+{
+  "type": 1,
+  "name": "trivia",
+  "description": "Frågesport",
+  "autocomplete": true,
+  "options": [
+    {
+      "name": "dagens",
+      "description": "Visa dagens fråga",
+      "type": 1
+    },
+    {
+      "name": "ställning_innevarande",
+      "description": "Visa ställningen för innevarande månad",
+      "type": 1
+    },
+    {
+      "name": "ställning_föregående",
+      "description": "Visa ställningen för föregående månad",
+      "type": 1
+    },
+    {
+      "name": "ställning_alltime",
+      "description": "Visa ställningen för all tid",
+      "type": 1
+    }
+    ]
+}
