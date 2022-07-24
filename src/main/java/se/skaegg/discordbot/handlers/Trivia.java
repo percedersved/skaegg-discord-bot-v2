@@ -129,7 +129,8 @@ public class Trivia implements SlashCommand {
                                             Button.primary(answersMap.get(allAnswers.get(1)), allAnswers.get(1))
                                     )
                             )
-                    );
+                    )
+                    .subscribe();
         }
         else {
             log.error("Something went wrong with the answers. There should only be 2 or 4 answers in the API response. Number of answers were {}", allAnswers.size());
