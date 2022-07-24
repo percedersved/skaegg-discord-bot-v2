@@ -32,7 +32,7 @@ public class DailyTriviaConfiguration {
         this.triviaScoresRepository = triviaScoresRepository;
     }
 
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "${trivia.cron.expression}")
     public void createDailyTriviaMessage() {
 
         Trivia trivia = new Trivia(triviaQuestionsRepository, triviaScoresRepository, client);
