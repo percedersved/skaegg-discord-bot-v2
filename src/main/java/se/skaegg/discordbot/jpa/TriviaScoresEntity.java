@@ -12,8 +12,8 @@ public class TriviaScoresEntity {
     @Column(name = "id", nullable = false, unique = true)
     Integer id;
 
-    @OneToOne
-    @JoinColumn(name = "question_id", nullable = false, referencedColumnName = "id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "question_id", nullable = false)
     TriviaQuestionsEntity question;
 
     @Column(name = "user_id")

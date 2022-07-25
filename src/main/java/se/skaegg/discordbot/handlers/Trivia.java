@@ -97,7 +97,7 @@ public class Trivia implements SlashCommand {
         Map<String, String> answersMap = incorrectAnswers.stream()
                 .collect(Collectors.toMap(HtmlUtils::htmlUnescape, answer -> questionId + "_trivia_" +  answer));
         // Add the correct answer to the map with the answer as key and "trivia_correct_answer" as value
-        answersMap.put(correctAnswer, questionId + "trivia_correct_answer");
+        answersMap.put(correctAnswer, questionId + "_trivia_correct_answer");
 
         // Add all the keys from the map to a list to be able to access them by index
         List<String> allAnswers = new ArrayList<>(answersMap.keySet());
@@ -248,7 +248,7 @@ public class Trivia implements SlashCommand {
             sb.append(". ");
             sb.append(triviaScoresCountPoints.get(i).getUserId());
             sb.append(" - ");
-            sb.append(triviaScoresCountPoints.get(i).getPoints());
+            sb.append(triviaScoresCountPoints.get(i).getPoints() / 2); // TODO: Need to divide this by 2 now because jpa returns this number doubled. Should fix this somehow
             sb.append("\n");
         }
 

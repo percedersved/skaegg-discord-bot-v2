@@ -3,6 +3,7 @@ package se.skaegg.discordbot.jpa;
 import javax.persistence.*;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "trivia_questions")
@@ -39,6 +40,9 @@ public class TriviaQuestionsEntity {
 
     @Column(name = "type")
     String type;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "question")
+    Set<TriviaScoresEntity> scores;
 
 
     public Integer getId() {
@@ -119,6 +123,14 @@ public class TriviaQuestionsEntity {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public Set<TriviaScoresEntity> getScores() {
+        return scores;
+    }
+
+    public void setScores(Set<TriviaScoresEntity> scores) {
+        this.scores = scores;
     }
 
     public List<String> getIncorrectAnswers() {
