@@ -26,6 +26,8 @@ import se.skaegg.discordbot.jpa.*;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Component
@@ -81,20 +83,21 @@ public class Trivia implements SlashCommand {
         TriviaObject triviaObject = new OpenTriviaClient(url, queryParams).process();
         TriviaResults question = triviaObject.getResults().get(0);
 
-        // If now question has been fetched from Open Trivia DB today add it to db
+        // If no question has been fetched from Open Trivia DB today add it to db
         if (triviaQuestionsRepository.findByQuestionDate(LocalDate.now()) == null) {
             saveQuestionToDb(question);
         }
 
         TriviaQuestionsEntity questionsEntity = triviaQuestionsRepository.findByQuestionDate(LocalDate.now());
+        int questionId = questionsEntity.getId();
         String correctAnswer = questionsEntity.getCorrectAnswer();
         List<String> incorrectAnswers = questionsEntity.getIncorrectAnswers();
 
         // Add incorrect answers to Map with the answer as key and as the value. The key is also unescaped to remove HTML encoded tags
         Map<String, String> answersMap = incorrectAnswers.stream()
-                .collect(Collectors.toMap(HtmlUtils::htmlUnescape, answer -> "trivia_" + answer));
+                .collect(Collectors.toMap(HtmlUtils::htmlUnescape, answer -> questionId + "_trivia_" +  answer));
         // Add the correct answer to the map with the answer as key and "trivia_correct_answer" as value
-        answersMap.put(correctAnswer, "trivia_correct_answer");
+        answersMap.put(correctAnswer, questionId + "trivia_correct_answer");
 
         // Add all the keys from the map to a list to be able to access them by index
         List<String> allAnswers = new ArrayList<>(answersMap.keySet());
@@ -165,15 +168,23 @@ public class Trivia implements SlashCommand {
                 answersMap.put(data.customId().get(), data.label().get());
             }
 
-            String correctAnswerLabel = answersMap.get("trivia_correct_answer");
+            int questionId = 0;
+            Matcher m = Pattern.compile("(.*?)_").matcher(event.getCustomId());
+            if (m.find()) {
+                questionId = Integer.parseInt(m.group(1));
+            }
+
+            String correctAnswerCustomId = questionId + "_trivia_correct_answer";
+            String correctAnswerLabel = answersMap.get(correctAnswerCustomId);
 
             String userId = event.getInteraction().getUser().getId().asString();
 
             TriviaScoresEntity scoresEntity = new TriviaScoresEntity();
             scoresEntity.setAnswerDate(LocalDate.now());
-            scoresEntity.setQuestion(triviaQuestionsRepository.findByQuestionDate(LocalDate.now()));
+//            scoresEntity.setQuestion(triviaQuestionsRepository.findByQuestionDate(LocalDate.now()));
+            scoresEntity.setQuestion(triviaQuestionsRepository.findById(questionId));
             scoresEntity.setUserId(interactionUser);
-            if (event.getCustomId().equals("trivia_correct_answer")) {
+            if (event.getCustomId().equals(correctAnswerCustomId)) {
                 scoresEntity.setCorrectAnswer(true);
                 event.reply()
                         .withContent("<@" + userId + "> svarade rätt")

@@ -9,4 +9,6 @@ import java.time.LocalDate;
 public interface TriviaQuestionsRepository extends JpaRepository<TriviaQuestionsEntity, Integer> {
 
     TriviaQuestionsEntity findByQuestionDate(LocalDate questionDate);
+
+    TriviaQuestionsEntity findById(int id);
 }
