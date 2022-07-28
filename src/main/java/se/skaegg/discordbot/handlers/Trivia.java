@@ -252,7 +252,7 @@ public class Trivia implements SlashCommand {
             sb.append(triviaScoresCountPoints.get(i).getUserId());
             sb.append(">");
             sb.append(" - ");
-            sb.append(triviaScoresCountPoints.get(i).getPoints()); // TODO: Need to divide this by 2 now because jpa returns this number doubled. Should fix this somehow
+            sb.append(triviaScoresCountPoints.get(i).getPoints());
             sb.append("\n");
         }
 
