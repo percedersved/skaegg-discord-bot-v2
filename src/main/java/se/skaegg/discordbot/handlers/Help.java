@@ -31,7 +31,11 @@ public class Help implements SlashCommand{
                 "`/nedräkning tabort [ID]` - Tar bort nedräkning\n" +
                 "`/restaurang` - Tips på restaurang. Default är i Norrtälje. Möjligt att lägga till annan stad eller plats som parameter\n" +
                 "`/restaurangduell` - Rösta på 2 olika slumpmässiga restauranger. Default är i Norrtälje. Möjligt att lägga till annan stad eller plats som parameter\n" +
-                "`/statistik` - Visar statistik för kommandon och vilka användare som använt boten mest";
+                "`/statistik` - Visar statistik för kommandon och vilka användare som använt boten mest\n" +
+                "`/trivia dagens` - Ger dagens fråga\n" +
+                "`/trivia ställning_innevarande` - Visar Trivia-ställningen för innevarande månad\n" +
+                "`/trivia ställning_föregående` - Visar Trivia-ställningen för föregående månad\n" +
+                "`/trivia ställning_alltime` - Visar Trivia-ställningen för all tid";
 
         EmbedCreateSpec embed = EmbedCreateSpec.builder()
                 .color(Color.of(90, 130, 180))
