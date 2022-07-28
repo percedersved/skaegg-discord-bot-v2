@@ -40,8 +40,6 @@ public class Trivia implements SlashCommand {
 
     private static final Logger log = LoggerFactory.getLogger(Trivia.class);
 
-    @Value("${trivia.daily.channelid}")
-    String channelId;
     @Value("${trivia.url}")
     String url;
     @Value("${trivia.queryparams}")
@@ -66,7 +64,8 @@ public class Trivia implements SlashCommand {
         switch (subCommandName) {
             case "dagens":
                 event.reply("Dagens fråga").subscribe();
-                return createQuestions(url, queryParams, channelId).then();
+                String manualChannelId = event.getInteraction().getChannelId().asString();
+                return createQuestions(url, queryParams, manualChannelId).then();
             case "ställning_innevarande":
                 return showStandings(event, scoresPeriod.CURRENT_MONTH);
             case "ställning_föregående":
@@ -144,7 +143,8 @@ public class Trivia implements SlashCommand {
 
     public Mono<Void> checkAnswer(ButtonInteractionEvent event) {
 
-        String interactionUser = event.getInteraction().getUser().getUsername();
+        String interactionUser = event.getInteraction().getUser().getId().asString();
+
         if (triviaScoresRepository.findByUserIdAndAnswerDate(interactionUser, LocalDate.now()) != null) {
             event.reply()
                     .withEphemeral(true)
@@ -183,7 +183,8 @@ public class Trivia implements SlashCommand {
             scoresEntity.setAnswerDate(LocalDate.now());
 //            scoresEntity.setQuestion(triviaQuestionsRepository.findByQuestionDate(LocalDate.now()));
             scoresEntity.setQuestion(triviaQuestionsRepository.findById(questionId));
-            scoresEntity.setUserId(interactionUser);
+//            scoresEntity.setUserId(interactionUser);
+            scoresEntity.setUserId(userId);
             if (event.getCustomId().equals(correctAnswerCustomId)) {
                 scoresEntity.setCorrectAnswer(true);
                 event.reply()
@@ -228,6 +229,7 @@ public class Trivia implements SlashCommand {
 
         List<TriviaScoresCountPoints> triviaScoresCountPoints = triviaScoresRepository.countTotalIdsByAnswerAndDates(fromDate, toDate);
 
+
         int numberToShow = Math.min(triviaScoresCountPoints.size(), 10); // This is just to know what to use the looping. If there are more than 10 rows returned from DB 10 should be max
 
         StringBuilder sb = new StringBuilder();
@@ -246,9 +248,11 @@ public class Trivia implements SlashCommand {
                     sb.append(i + 1);
             }
             sb.append(". ");
+            sb.append("<@");
             sb.append(triviaScoresCountPoints.get(i).getUserId());
+            sb.append(">");
             sb.append(" - ");
-            sb.append(triviaScoresCountPoints.get(i).getPoints() / 2); // TODO: Need to divide this by 2 now because jpa returns this number doubled. Should fix this somehow
+            sb.append(triviaScoresCountPoints.get(i).getPoints()); // TODO: Need to divide this by 2 now because jpa returns this number doubled. Should fix this somehow
             sb.append("\n");
         }
 
