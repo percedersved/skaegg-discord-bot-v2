@@ -12,7 +12,12 @@ public interface TriviaScoresRepository extends JpaRepository<TriviaScoresEntity
 
     TriviaScoresEntity findByUserIdAndAnswerDate(String userId, LocalDate answerDate);
 
-    @Query("SELECT new se.skaegg.discordbot.jpa.TriviaScoresCountPoints(COUNT(s.id), s.userId) "
-         + "FROM TriviaScoresEntity AS s, TriviaQuestionsEntity AS q WHERE s.correctAnswer = 1 AND q.questionDate BETWEEN ?1 AND ?2 GROUP BY s.userId ORDER BY COUNT(s.id) DESC")
+    @Query("SELECT new se.skaegg.discordbot.jpa.TriviaScoresCountPoints(COUNT(s.id), s.userId) " +
+            "FROM TriviaScoresEntity AS s " +
+            "INNER JOIN TriviaQuestionsEntity AS q  " +
+            "ON s.question = q.id " +
+            "WHERE s.correctAnswer = 1 AND q.questionDate BETWEEN ?1 AND ?2 " +
+            "GROUP BY s.userId " +
+            "ORDER BY COUNT(s.id) DESC")
     List<TriviaScoresCountPoints> countTotalIdsByAnswerAndDates(LocalDate fromDate, LocalDate toDate);
 }

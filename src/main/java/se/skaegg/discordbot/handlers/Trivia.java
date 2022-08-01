@@ -181,9 +181,7 @@ public class Trivia implements SlashCommand {
 
             TriviaScoresEntity scoresEntity = new TriviaScoresEntity();
             scoresEntity.setAnswerDate(LocalDate.now());
-//            scoresEntity.setQuestion(triviaQuestionsRepository.findByQuestionDate(LocalDate.now()));
             scoresEntity.setQuestion(triviaQuestionsRepository.findById(questionId));
-//            scoresEntity.setUserId(interactionUser);
             scoresEntity.setUserId(userId);
             if (event.getCustomId().equals(correctAnswerCustomId)) {
                 scoresEntity.setCorrectAnswer(true);
@@ -212,12 +210,12 @@ public class Trivia implements SlashCommand {
         switch (period) {
             case CURRENT_MONTH:
                 fromDate = YearMonth.now().atDay(1);
-                toDate = YearMonth.now().plusMonths(1).atDay(1);
+                toDate = YearMonth.now().atEndOfMonth();
                 nowShowing = "Innevarande månad";
                 break;
             case PREVIOUS_MONTH:
                 fromDate = YearMonth.now().minusMonths(1).atDay(1);
-                toDate = YearMonth.now().atDay(1);
+                toDate = YearMonth.now().minusMonths(1).atEndOfMonth();
                 nowShowing = "Föregående månad";
                 break;
             case ALL_TIME:
