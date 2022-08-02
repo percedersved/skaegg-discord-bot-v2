@@ -13,7 +13,7 @@ public class TriviaScoresEntity {
     Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "question_id", nullable = false, insertable = false, updatable = false)
+    @JoinColumn(name = "question_id", nullable = false)
     TriviaQuestionsEntity question;
 
     @Column(name = "user_id")
