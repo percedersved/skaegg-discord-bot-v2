@@ -191,20 +191,18 @@ public class Trivia implements SlashCommand {
             scoresEntity.setUserId(userId);
             if (event.getCustomId().equals(correctAnswerCustomId)) {
                 scoresEntity.setCorrectAnswer(true);
-                event.createFollowup()
+                event.createFollowup() // This needs to be here since discord awaits a response/followup, otherwise the bot will show "thinking" forever
                         .withContent("Snyggt, du svarade rätt!")
+                        .withEphemeral(true)
                         .subscribe();
-                client.getChannelById(channelIdSnowFlake)
+                client.getChannelById(channelIdSnowFlake) // This needs to be done with client since you cant mix ephemeral responses with normal
                         .ofType(MessageChannel.class)
                         .flatMap(channel -> channel.createMessage()
                                 .withContent("<@" + userId + "> svarade rätt på frågan:\n" + question.getQuestion()))
                         .subscribe();
             } else {
                 scoresEntity.setCorrectAnswer(false);
-//                event.createFollowup()
-//                        .withContent("<@" + userId + "> svarade fel")
-//                        .subscribe();
-                client.getChannelById(channelIdSnowFlake)
+                client.getChannelById(channelIdSnowFlake) // This needs to be done with client since you cant mix ephemeral responses with normal
                         .ofType(MessageChannel.class)
                         .flatMap(channel -> channel.createMessage()
                                 .withContent("<@" + userId + "> svarade fel på frågan:\n" + question.getQuestion()))
