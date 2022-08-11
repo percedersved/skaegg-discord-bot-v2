@@ -38,4 +38,12 @@ public class DailyTriviaConfiguration {
         Trivia trivia = new Trivia(triviaQuestionsRepository, triviaScoresRepository, client);
         trivia.createQuestions(url, queryParams, channelId);
     }
+
+
+    // TODO: This is new. Trying to post last months results on the first day of the next month
+//    @Scheduled(cron = "${trivia.cron.scorepost}")
+//    public void postMonthlyResults() {
+//        Trivia trivia = new Trivia(triviaQuestionsRepository, triviaScoresRepository, client);
+
+//    }
 }

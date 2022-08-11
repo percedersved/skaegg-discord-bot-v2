@@ -143,10 +143,12 @@ public class Trivia implements SlashCommand {
 
     public Mono<Void> checkAnswer(ButtonInteractionEvent event) {
 
+        event.deferReply().subscribe();
+
         String interactionUser = event.getInteraction().getUser().getId().asString();
 
         if (triviaScoresRepository.findByUserIdAndAnswerDate(interactionUser, LocalDate.now()) != null) {
-            event.reply()
+            event.createFollowup()
                     .withEphemeral(true)
                     .withContent("Du har redan svarat på dagens fråga")
                     .subscribe();
@@ -185,12 +187,12 @@ public class Trivia implements SlashCommand {
             scoresEntity.setUserId(userId);
             if (event.getCustomId().equals(correctAnswerCustomId)) {
                 scoresEntity.setCorrectAnswer(true);
-                event.reply()
+                event.createFollowup()
                         .withContent("<@" + userId + "> svarade rätt")
                         .subscribe();
             } else {
                 scoresEntity.setCorrectAnswer(false);
-                event.reply().withContent("<@" + userId + "> svarade fel").subscribe();
+                event.createFollowup().withContent("<@" + userId + "> svarade fel").subscribe();
                 event.createFollowup()
                         .withEphemeral(true)
                         .withContent("Rätt svar var: " + correctAnswerLabel)
