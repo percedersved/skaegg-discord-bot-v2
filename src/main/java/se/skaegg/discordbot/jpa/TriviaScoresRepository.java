@@ -12,6 +12,8 @@ public interface TriviaScoresRepository extends JpaRepository<TriviaScoresEntity
 
     TriviaScoresEntity findByUserIdAndAnswerDate(String userId, LocalDate answerDate);
 
+    TriviaScoresEntity findByUserIdAndQuestion(String userId, TriviaQuestionsEntity question);
+
     @Query("SELECT new se.skaegg.discordbot.jpa.TriviaScoresCountPoints(COUNT(s.id), s.userId) " +
             "FROM TriviaScoresEntity AS s " +
             "INNER JOIN TriviaQuestionsEntity AS q  " +

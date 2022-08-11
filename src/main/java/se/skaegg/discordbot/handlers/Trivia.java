@@ -143,14 +143,22 @@ public class Trivia implements SlashCommand {
 
     public Mono<Void> checkAnswer(ButtonInteractionEvent event) {
 
-        event.deferReply().subscribe();
+        event.deferReply().withEphemeral(true).subscribe();
 
         String interactionUser = event.getInteraction().getUser().getId().asString();
 
-        if (triviaScoresRepository.findByUserIdAndAnswerDate(interactionUser, LocalDate.now()) != null) {
+        int questionId = 0;
+        Matcher m = Pattern.compile("(.*?)_").matcher(event.getCustomId());
+        if (m.find()) {
+            questionId = Integer.parseInt(m.group(1));
+        }
+
+        TriviaQuestionsEntity question = triviaQuestionsRepository.findById(questionId);
+
+        if (triviaScoresRepository.findByUserIdAndQuestion(interactionUser, question) != null) {
             event.createFollowup()
                     .withEphemeral(true)
-                    .withContent("Du har redan svarat på dagens fråga")
+                    .withContent("Du har redan svarat på den frågan")
                     .subscribe();
         }
 
@@ -170,29 +178,37 @@ public class Trivia implements SlashCommand {
                 answersMap.put(data.customId().get(), data.label().get());
             }
 
-            int questionId = 0;
-            Matcher m = Pattern.compile("(.*?)_").matcher(event.getCustomId());
-            if (m.find()) {
-                questionId = Integer.parseInt(m.group(1));
-            }
-
             String correctAnswerCustomId = questionId + "_trivia_correct_answer";
             String correctAnswerLabel = answersMap.get(correctAnswerCustomId);
 
             String userId = event.getInteraction().getUser().getId().asString();
 
+            Snowflake channelIdSnowFlake = Objects.requireNonNull(event.getMessage().get().getChannel().block()).getId();
+
             TriviaScoresEntity scoresEntity = new TriviaScoresEntity();
             scoresEntity.setAnswerDate(LocalDate.now());
-            scoresEntity.setQuestion(triviaQuestionsRepository.findById(questionId));
+            scoresEntity.setQuestion(question);
             scoresEntity.setUserId(userId);
             if (event.getCustomId().equals(correctAnswerCustomId)) {
                 scoresEntity.setCorrectAnswer(true);
                 event.createFollowup()
-                        .withContent("<@" + userId + "> svarade rätt")
+                        .withContent("Snyggt, du svarade rätt!")
+                        .subscribe();
+                client.getChannelById(channelIdSnowFlake)
+                        .ofType(MessageChannel.class)
+                        .flatMap(channel -> channel.createMessage()
+                                .withContent("<@" + userId + "> svarade rätt på frågan:\n" + question.getQuestion()))
                         .subscribe();
             } else {
                 scoresEntity.setCorrectAnswer(false);
-                event.createFollowup().withContent("<@" + userId + "> svarade fel").subscribe();
+//                event.createFollowup()
+//                        .withContent("<@" + userId + "> svarade fel")
+//                        .subscribe();
+                client.getChannelById(channelIdSnowFlake)
+                        .ofType(MessageChannel.class)
+                        .flatMap(channel -> channel.createMessage()
+                                .withContent("<@" + userId + "> svarade fel på frågan:\n" + question.getQuestion()))
+                        .subscribe();
                 event.createFollowup()
                         .withEphemeral(true)
                         .withContent("Rätt svar var: " + correctAnswerLabel)
