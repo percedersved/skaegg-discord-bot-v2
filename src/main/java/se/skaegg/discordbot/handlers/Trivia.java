@@ -219,6 +219,8 @@ public class Trivia implements SlashCommand {
 
 
     private Mono<Void> showStandings(ChatInputInteractionEvent event, scoresPeriod period) {
+        event.deferReply().subscribe();
+
         LocalDate fromDate = null;
         LocalDate toDate = null;
         String nowShowing = null;
@@ -271,7 +273,7 @@ public class Trivia implements SlashCommand {
         }
 
         if (numberToShow == 0) {
-            return event.reply("Det finns ingen ställning för den perioden än");
+            return event.createFollowup("Det finns ingen ställning för den perioden än").then();
         }
 
         EmbedCreateSpec embed = EmbedCreateSpec.builder()
@@ -280,7 +282,7 @@ public class Trivia implements SlashCommand {
                 .addField(EmbedCreateFields.Field.of("Användare - Poäng", sb.toString(), true))
                 .build();
 
-        return event.reply().withEmbeds(embed).then();
+        return event.createFollowup().withEmbeds(embed).then();
     }
 
 
