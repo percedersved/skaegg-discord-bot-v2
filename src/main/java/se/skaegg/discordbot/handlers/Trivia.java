@@ -189,31 +189,49 @@ public class Trivia implements SlashCommand {
             scoresEntity.setAnswerDate(LocalDate.now());
             scoresEntity.setQuestion(question);
             scoresEntity.setUserId(userId);
+
+            log.info("TRIVIA TEMPLOGGING >> {} pushed an answer button with customID: {}. Now we will try to find out if the answer was right or wrong", userId, event.getCustomId());
+
             if (event.getCustomId().equals(correctAnswerCustomId)) {
+                log.info("TRIVIA TEMPLOGGING >> The answer was correct");
                 scoresEntity.setCorrectAnswer(true);
                 event.createFollowup() // This needs to be here since discord awaits a response/followup, otherwise the bot will show "thinking" forever
                         .withContent("Snyggt, du svarade rätt!")
                         .withEphemeral(true)
+                        .onErrorResume(throwable -> event.createFollowup()
+                                .withContent("Snyggt, du svarade rätt!")
+                                .withEphemeral(true))
                         .subscribe();
+                log.info("TRIVIA TEMPLOGGING >> The followup has been created for the correct answer");
                 client.getChannelById(channelIdSnowFlake) // This needs to be done with client since you cant mix ephemeral responses with normal
                         .ofType(MessageChannel.class)
                         .flatMap(channel -> channel.createMessage()
                                 .withContent("<@" + userId + "> svarade rätt på frågan:\n" + question.getQuestion()))
                         .subscribe();
+                log.info("TRIVIA TEMPLOGGING >> The public message created with client has been sent");
             } else {
+                log.info("TRIVIA TEMPLOGGING >> The answer was incorrect");
                 scoresEntity.setCorrectAnswer(false);
+                event.createFollowup()
+                        .withEphemeral(true)
+                        .withContent("Rätt svar var: " + correctAnswerLabel)
+                        .onErrorResume(throwable -> event.createFollowup()
+                                .withContent("Rätt svar var: " + correctAnswerLabel)
+                                .withEphemeral(true))
+                        .subscribe();
+                log.info("TRIVIA TEMPLOGGING >> The followup has been created for the correct answer");
                 client.getChannelById(channelIdSnowFlake) // This needs to be done with client since you cant mix ephemeral responses with normal
                         .ofType(MessageChannel.class)
                         .flatMap(channel -> channel.createMessage()
                                 .withContent("<@" + userId + "> svarade fel på frågan:\n" + question.getQuestion()))
                         .subscribe();
-                event.createFollowup()
-                        .withEphemeral(true)
-                        .withContent("Rätt svar var: " + correctAnswerLabel)
-                        .subscribe();
+                log.info("TRIVIA TEMPLOGGING >> The public message created with client has been sent");
             }
+            log.info("TRIVIA TEMPLOGGING >> The checking of the answer is done");
             triviaScoresRepository.save(scoresEntity);
+            log.info("TRIVIA TEMPLOGGING >> The answer has been saved to the database");
         }
+        log.info("TRIVIA TEMPLOGGING >> Everything is done and now we just return Mono.empty");
         return Mono.empty();
     }
 
