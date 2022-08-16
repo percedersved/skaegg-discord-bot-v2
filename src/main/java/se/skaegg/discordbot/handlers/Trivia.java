@@ -206,7 +206,7 @@ public class Trivia implements SlashCommand {
                 client.getChannelById(channelIdSnowFlake) // This needs to be done with client since you cant mix ephemeral responses with normal
                         .ofType(MessageChannel.class)
                         .flatMap(channel -> channel.createMessage()
-                                .withContent("<@" + userId + "> svarade rätt på frågan:\n" + question.getQuestion()))
+                                .withContent(":green_circle: <@" + userId + "> svarade rätt på frågan:\n*" + question.getQuestion() + "*"))
                         .subscribe();
                 log.info("TRIVIA TEMPLOGGING >> The public message created with client has been sent");
             } else {
@@ -223,7 +223,7 @@ public class Trivia implements SlashCommand {
                 client.getChannelById(channelIdSnowFlake) // This needs to be done with client since you cant mix ephemeral responses with normal
                         .ofType(MessageChannel.class)
                         .flatMap(channel -> channel.createMessage()
-                                .withContent("<@" + userId + "> svarade fel på frågan:\n" + question.getQuestion()))
+                                .withContent(":red_circle: <@" + userId + "> svarade fel på frågan:\n*" + question.getQuestion() + "*"))
                         .subscribe();
                 log.info("TRIVIA TEMPLOGGING >> The public message created with client has been sent");
             }
