@@ -119,6 +119,7 @@ public class Trivia implements SlashCommand {
                                     )
                             )
                     )
+                    .retry(3)
                     .subscribe();
         }
         else if (allAnswers.size() == 2) {
@@ -132,6 +133,7 @@ public class Trivia implements SlashCommand {
                                     )
                             )
                     )
+                    .retry(3)
                     .subscribe();
         }
         else {
