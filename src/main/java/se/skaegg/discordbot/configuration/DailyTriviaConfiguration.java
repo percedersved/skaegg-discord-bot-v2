@@ -10,6 +10,8 @@ import se.skaegg.discordbot.handlers.Trivia;
 import se.skaegg.discordbot.jpa.TriviaQuestionsRepository;
 import se.skaegg.discordbot.jpa.TriviaScoresRepository;
 
+import java.time.LocalDate;
+
 @Configuration
 @EnableScheduling
 public class DailyTriviaConfiguration {
@@ -37,6 +39,12 @@ public class DailyTriviaConfiguration {
 
         Trivia trivia = new Trivia(triviaQuestionsRepository, triviaScoresRepository, client);
         trivia.createQuestions(url, queryParams, channelId);
+    }
+
+    @Scheduled(cron = "${trivia.cron.dailypercentage}")
+    public void createYesterdayTriviaCorrect() {
+        Trivia trivia = new Trivia(triviaQuestionsRepository, triviaScoresRepository, client);
+        trivia.displayCorrectAnswerPercentForDate(LocalDate.now().minusDays(1L), channelId);
     }
 
 

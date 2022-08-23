@@ -330,6 +330,27 @@ public class Trivia implements SlashCommand {
         triviaQuestionsRepository.save(entity);
     }
 
+
+    public void displayCorrectAnswerPercentForDate(LocalDate date, String channelId) {
+
+        TriviaPercentageForDateEntity percentageForDate = triviaScoresRepository.percentageCorrectByDate(date);
+        String percentageFormatted = String.format("%.1f", percentageForDate.getPercentCorrect());
+
+        String text = percentageFormatted +
+                "% svarade rätt på gårdagens fråga: \n*" +
+                percentageForDate.getQuestion() +
+                "*";
+
+        client.getChannelById(Snowflake.of(channelId))
+                .ofType(MessageChannel.class)
+                .flatMap(channel -> channel.createMessage()
+                        .withContent(text)
+                )
+                .retry(3)
+                .subscribe();
+    }
+
+
     enum scoresPeriod {
         CURRENT_MONTH,
         PREVIOUS_MONTH,
