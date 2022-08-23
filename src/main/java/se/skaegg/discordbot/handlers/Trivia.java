@@ -333,7 +333,7 @@ public class Trivia implements SlashCommand {
 
     public void displayCorrectAnswerPercentForDate(LocalDate date, String channelId) {
 
-        TriviaPercentageForDateEntity percentageForDate = triviaScoresRepository.percentageCorrectByDate(date);
+        TriviaPercentageForDateEntity percentageForDate = triviaScoresRepository.percentageCorrectByDate2(date);
         String percentageFormatted = String.format("%.1f", percentageForDate.getPercentCorrect());
 
         String text = percentageFormatted +
