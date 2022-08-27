@@ -11,13 +11,16 @@ import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.discordjson.json.ComponentData;
+import discord4j.rest.http.client.ClientException;
 import discord4j.rest.util.Color;
+import io.netty.handler.codec.PrematureChannelClosureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.HtmlUtils;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.PrematureCloseException;
 import se.skaegg.discordbot.clients.OpenTriviaClient;
 import se.skaegg.discordbot.dto.TriviaObject;
 import se.skaegg.discordbot.dto.TriviaResults;
@@ -38,7 +41,7 @@ public class Trivia implements SlashCommand {
     TriviaScoresRepository triviaScoresRepository;
     GatewayDiscordClient client;
 
-    private static final Logger log = LoggerFactory.getLogger(Trivia.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Trivia.class);
 
     @Value("${trivia.url}")
     String url;
@@ -137,7 +140,7 @@ public class Trivia implements SlashCommand {
                     .subscribe();
         }
         else {
-            log.error("Something went wrong with the answers. There should only be 2 or 4 answers in the API response. Number of answers were {}", allAnswers.size());
+            LOG.error("Something went wrong with the answers. There should only be 2 or 4 answers in the API response. Number of answers were {}", allAnswers.size());
         }
         return Mono.empty();
     }
@@ -145,7 +148,21 @@ public class Trivia implements SlashCommand {
 
     public Mono<Void> checkAnswer(ButtonInteractionEvent event) {
 
-        event.deferReply().withEphemeral(true).subscribe();
+        event.deferReply()
+                .withEphemeral(true)
+                .retry(3)
+                .onErrorResume(e -> {
+                    if (e instanceof ClientException) {
+                        LOG.error("Discord4j ClientException: \n{}", e.getMessage());
+                    }
+                    else if (e instanceof PrematureCloseException) {
+                        LOG.error("Netty PrematureCloseExcption, something closed the connection: \n{}", e.getMessage());
+                    }
+                    else {
+                        LOG.error("An error occured but was not ClientException or PrematureCloseException\n{}", e.getMessage());
+                    }
+                    return Mono.empty();
+                }).subscribe();
 
         String interactionUser = event.getInteraction().getUser().getId().asString();
 
@@ -192,48 +209,44 @@ public class Trivia implements SlashCommand {
             scoresEntity.setQuestion(question);
             scoresEntity.setUserId(userId);
 
-            log.info("TRIVIA TEMPLOGGING >> {} pushed an answer button with customID: {}. Now we will try to find out if the answer was right or wrong", userId, event.getCustomId());
+            LOG.info("TRIVIA TEMPLOGGING >> {} pushed an answer button with customID: {}. Now we will try to find out if the answer was right or wrong", userId, event.getCustomId());
 
             if (event.getCustomId().equals(correctAnswerCustomId)) {
-                log.info("TRIVIA TEMPLOGGING >> The answer was correct");
+                LOG.info("TRIVIA TEMPLOGGING >> The answer was correct");
                 scoresEntity.setCorrectAnswer(true);
                 event.createFollowup() // This needs to be here since discord awaits a response/followup, otherwise the bot will show "thinking" forever
                         .withContent("Snyggt, du svarade rätt!")
                         .withEphemeral(true)
-                        .onErrorResume(throwable -> event.createFollowup()
-                                .withContent("Snyggt, du svarade rätt!")
-                                .withEphemeral(true))
+                        .retry(3)
                         .subscribe();
-                log.info("TRIVIA TEMPLOGGING >> The followup has been created for the correct answer");
+                LOG.info("TRIVIA TEMPLOGGING >> The followup has been created for the correct answer");
                 client.getChannelById(channelIdSnowFlake) // This needs to be done with client since you cant mix ephemeral responses with normal
                         .ofType(MessageChannel.class)
                         .flatMap(channel -> channel.createMessage()
                                 .withContent(":green_circle: <@" + userId + "> svarade rätt på frågan:\n*" + question.getQuestion() + "*"))
                         .subscribe();
-                log.info("TRIVIA TEMPLOGGING >> The public message created with client has been sent");
+                LOG.info("TRIVIA TEMPLOGGING >> The public message created with client has been sent");
             } else {
-                log.info("TRIVIA TEMPLOGGING >> The answer was incorrect");
+                LOG.info("TRIVIA TEMPLOGGING >> The answer was incorrect");
                 scoresEntity.setCorrectAnswer(false);
                 event.createFollowup()
                         .withEphemeral(true)
                         .withContent("Rätt svar var: " + correctAnswerLabel)
-                        .onErrorResume(throwable -> event.createFollowup()
-                                .withContent("Rätt svar var: " + correctAnswerLabel)
-                                .withEphemeral(true))
+                        .retry(3)
                         .subscribe();
-                log.info("TRIVIA TEMPLOGGING >> The followup has been created for the correct answer");
+                LOG.info("TRIVIA TEMPLOGGING >> The followup has been created for the correct answer");
                 client.getChannelById(channelIdSnowFlake) // This needs to be done with client since you cant mix ephemeral responses with normal
                         .ofType(MessageChannel.class)
                         .flatMap(channel -> channel.createMessage()
                                 .withContent(":red_circle: <@" + userId + "> svarade fel på frågan:\n*" + question.getQuestion() + "*"))
                         .subscribe();
-                log.info("TRIVIA TEMPLOGGING >> The public message created with client has been sent");
+                LOG.info("TRIVIA TEMPLOGGING >> The public message created with client has been sent");
             }
-            log.info("TRIVIA TEMPLOGGING >> The checking of the answer is done");
+            LOG.info("TRIVIA TEMPLOGGING >> The checking of the answer is done");
             triviaScoresRepository.save(scoresEntity);
-            log.info("TRIVIA TEMPLOGGING >> The answer has been saved to the database");
+            LOG.info("TRIVIA TEMPLOGGING >> The answer has been saved to the database");
         }
-        log.info("TRIVIA TEMPLOGGING >> Everything is done and now we just return Mono.empty");
+        LOG.info("TRIVIA TEMPLOGGING >> Everything is done and now we just return Mono.empty");
         return Mono.empty();
     }
 
