@@ -47,6 +47,8 @@ public class Trivia implements SlashCommand {
     String url;
     @Value("${trivia.queryparams}")
     String queryParams;
+    @Value("${trivia.results.maxresults}")
+    Integer maxResults;
 
 
     public Trivia(TriviaQuestionsRepository triviaQuestionsRepository, TriviaScoresRepository triviaScoresRepository, GatewayDiscordClient client) {
@@ -279,7 +281,7 @@ public class Trivia implements SlashCommand {
         List<TriviaScoresCountPoints> triviaScoresCountPoints = triviaScoresRepository.countTotalIdsByAnswerAndDates(fromDate, toDate);
 
 
-        int numberToShow = Math.min(triviaScoresCountPoints.size(), 10); // This is just to know what to use the looping. If there are more than 10 rows returned from DB 10 should be max
+        int numberToShow = Math.min(triviaScoresCountPoints.size(), maxResults); // This is just to know what to use the looping. If there are more than {maxResults} rows returned from DB {maxResults} should be max
 
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < numberToShow ; i++){
