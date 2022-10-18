@@ -38,7 +38,8 @@ public class DailyTriviaConfiguration {
     public void createDailyTriviaMessage() {
 
         Trivia trivia = new Trivia(triviaQuestionsRepository, triviaScoresRepository, client);
-        trivia.createQuestions(url, queryParams, channelId);
+//        trivia.createQuestions(url, queryParams, channelId);
+        trivia.createGetQuestionButton(channelId);
     }
 
     @Scheduled(cron = "${trivia.cron.dailypercentage}")
