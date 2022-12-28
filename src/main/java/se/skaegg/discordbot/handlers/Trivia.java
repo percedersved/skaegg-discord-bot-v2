@@ -4,6 +4,7 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.channel.MessageChannel;
@@ -25,11 +26,9 @@ import se.skaegg.discordbot.dto.TriviaResults;
 import se.skaegg.discordbot.jpa.*;
 import se.skaegg.discordbot.listeners.TriviaTempListener;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.*;
-import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -40,6 +39,7 @@ public class Trivia implements SlashCommand {
 
     TriviaQuestionsRepository triviaQuestionsRepository;
     TriviaScoresRepository triviaScoresRepository;
+    TriviaButtonClicksRepository triviaButtonClicksRepository;
     GatewayDiscordClient client;
 
     private static final Logger LOG = LoggerFactory.getLogger(Trivia.class);
@@ -52,9 +52,13 @@ public class Trivia implements SlashCommand {
     Integer maxResults;
 
 
-    public Trivia(TriviaQuestionsRepository triviaQuestionsRepository, TriviaScoresRepository triviaScoresRepository, GatewayDiscordClient client) {
+    public Trivia(TriviaQuestionsRepository triviaQuestionsRepository,
+                  TriviaScoresRepository triviaScoresRepository,
+                  TriviaButtonClicksRepository triviaButtonClicksRepository,
+                  GatewayDiscordClient client) {
         this.triviaQuestionsRepository = triviaQuestionsRepository;
         this.triviaScoresRepository = triviaScoresRepository;
+        this.triviaButtonClicksRepository = triviaButtonClicksRepository;
         this.client = client;
     }
 
@@ -65,7 +69,8 @@ public class Trivia implements SlashCommand {
 
     @Override
     public Mono<Void> handle(ChatInputInteractionEvent event) {
-        String subCommandName = event.getOptions().get(0).getName();
+        ApplicationCommandInteractionOption subCommand = event.getOptions().get(0);
+        String subCommandName = subCommand.getName();
 
         switch (subCommandName) {
             case "dagens":
@@ -78,6 +83,9 @@ public class Trivia implements SlashCommand {
                 return showStandings(event, scoresPeriod.PREVIOUS_MONTH);
             case "ställning_alltime":
                 return showStandings(event, scoresPeriod.ALL_TIME);
+            case "andel_svar_månad":
+                List<ApplicationCommandInteractionOption> subCommandOptions = subCommand.getOptions();
+                return displayAnswersPerUserAndMonth(event, subCommandOptions);
             default:
                 return Mono.empty();
         }
@@ -128,6 +136,16 @@ public class Trivia implements SlashCommand {
         String correctAnswer = questionsEntity.getCorrectAnswer();
         List<String> incorrectAnswers = questionsEntity.getIncorrectAnswers();
 
+        // Check if the user already fetched todays question. You may only do this once
+        String interactionUser = event.getInteraction().getUser().getId().asString();
+        if (triviaButtonClicksRepository.findByUserIdAndQuestion(interactionUser, questionsEntity) != null) {
+            event.createFollowup()
+                    .withEphemeral(true)
+                    .withContent("Du har redan hämtat dagens fråga")
+                    .subscribe();
+            return Mono.empty();
+        }
+
         // Add incorrect answers to Map with the answer as key and as the value. The key is also unescaped to remove HTML encoded tags
         Map<String, String> answersMap = incorrectAnswers.stream()
                 .collect(Collectors.toMap(HtmlUtils::htmlUnescape, answer -> questionId + "_trivia_" +  answer));
@@ -172,8 +190,14 @@ public class Trivia implements SlashCommand {
         }
         else {
             LOG.error("Something went wrong with the answers. There should only be 2 or 4 answers in the API response. Number of answers were {}", allAnswers.size());
+            return Mono.empty();
         }
 
+        // Save user and question to button click table so we know that the fetch button has been pushed for this question
+        TriviaButtonClicksEntity triviaButtonClicksEntity = new TriviaButtonClicksEntity();
+        triviaButtonClicksEntity.setUserId(interactionUser);
+        triviaButtonClicksEntity.setQuestion(questionsEntity);
+        triviaButtonClicksRepository.save(triviaButtonClicksEntity);
 
         return Mono.empty();
     }
@@ -394,6 +418,46 @@ public class Trivia implements SlashCommand {
                 )
                 .retry(3)
                 .subscribe();
+    }
+
+
+    public Mono<Void> displayAnswersPerUserAndMonth(ChatInputInteractionEvent event, List<ApplicationCommandInteractionOption> subCommandOptions) {
+        event.deferReply().subscribe();
+
+        String year = subCommandOptions.get(0).getValue().get().getRaw();
+        String month = subCommandOptions.get(1).getValue().get().getRaw();
+        LocalDate start = LocalDate.of(Integer.parseInt(year), Integer.parseInt(month), 1);
+        LocalDate end = start.withDayOfMonth(start.getMonth().length(start.isLeapYear()));
+        List<TriviaAnswersPerUserMonth> answersPerUserMonth = triviaScoresRepository.answersPerUserAndMonth(start, end);
+
+        StringBuilder userBuilder = new StringBuilder();
+        StringBuilder pointsBuilder = new StringBuilder();
+        StringBuilder percentBuilder = new StringBuilder();
+
+        for (TriviaAnswersPerUserMonth row : answersPerUserMonth) {
+            String user = Objects.requireNonNull(client.
+                    getMemberById(Snowflake.of(841042241107394650L), Snowflake.of(row.getUserId())).block()).getDisplayName();
+            userBuilder.append(user);
+            userBuilder.append("\n");
+            pointsBuilder.append(row.getPoints());
+            pointsBuilder.append("\n");
+            percentBuilder.append(row.getPercent());
+            percentBuilder.append("%\n");
+        }
+
+        EmbedCreateSpec embed = EmbedCreateSpec.builder()
+                .color(Color.of(90, 130, 180))
+                .title("Andel svar för månad " + month)
+                .addField(EmbedCreateFields.Field.of("Användare", userBuilder.toString(), true))
+                .addField(EmbedCreateFields.Field.of("Poäng", pointsBuilder.toString(), true))
+                .addField(EmbedCreateFields.Field.of("Andel svarade frågor", percentBuilder.toString(), true))
+                .build();
+
+        event.createFollowup()
+                .withEmbeds(embed)
+                .subscribe();
+
+        return Mono.empty();
     }
 
 

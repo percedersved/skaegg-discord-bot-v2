@@ -2,16 +2,14 @@ package se.skaegg.discordbot.listeners;
 
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
-import io.netty.handler.timeout.TimeoutException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import se.skaegg.discordbot.handlers.Trivia;
+import se.skaegg.discordbot.jpa.TriviaButtonClicksRepository;
 import se.skaegg.discordbot.jpa.TriviaQuestionsRepository;
 import se.skaegg.discordbot.jpa.TriviaScoresRepository;
-
-import java.time.Duration;
 
 @Component
 public class ButtonListener {
@@ -20,6 +18,8 @@ public class ButtonListener {
     TriviaQuestionsRepository triviaQuestionsRepository;
     @Autowired
     TriviaScoresRepository triviaScoresRepository;
+    @Autowired
+    TriviaButtonClicksRepository triviaButtonClicksRepository;
     @Autowired
     GatewayDiscordClient client;
 
@@ -38,7 +38,7 @@ public class ButtonListener {
 //            return new Trivia(triviaQuestionsRepository, triviaScoresRepository, client).checkAnswer(event);
 //        }
         if (event.getCustomId().equals("getTodaysQuestion")){
-            return new Trivia(triviaQuestionsRepository, triviaScoresRepository, client).createQuestions(url, queryParams, event);
+            return new Trivia(triviaQuestionsRepository, triviaScoresRepository, triviaButtonClicksRepository, client).createQuestions(url, queryParams, event);
         }
         else {
             return Mono.empty();
