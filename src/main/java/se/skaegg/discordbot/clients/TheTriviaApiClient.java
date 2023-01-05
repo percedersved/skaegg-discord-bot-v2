@@ -5,11 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.netty.http.client.HttpClient;
-import se.skaegg.discordbot.dto.OpenTriviaObject;
+import se.skaegg.discordbot.dto.TheTriviaApiResults;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
-public class OpenTriviaClient {
+public class TheTriviaApiClient {
 
     private static final Logger log = LoggerFactory.getLogger(OpenTriviaClient.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -17,12 +19,12 @@ public class OpenTriviaClient {
     String url;
     String queryParams;
 
-    public OpenTriviaClient(String url, String numberOfQuestions) {
+    public TheTriviaApiClient(String url, String numberOfQuestions) {
         this.url = url;
         this.queryParams = numberOfQuestions;
     }
 
-    public OpenTriviaObject process() {
+    public TheTriviaApiResults process() {
 
         url = url + "?" + queryParams;
 
@@ -34,18 +36,18 @@ public class OpenTriviaClient {
                 .asString()
                 .block();
 
-        OpenTriviaObject questions = new OpenTriviaObject();
+        List<TheTriviaApiResults> jsonList = new ArrayList<>();
+        TheTriviaApiResults questions = new TheTriviaApiResults();
 
         try {
-            questions = MAPPER.readValue(response, new TypeReference<>() {});
-        }
-        catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+//             jsonList = MAPPER.readValue(response, List.class);
+//             String jsonObj = jsonList.get(0);
+            jsonList = MAPPER.readValue(response, new TypeReference<>() {
+            });
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             log.error(String.format("Couldn't map the json string to Trivia DTO %n%s %n%s", e.getMessage(), Arrays.toString(e.getStackTrace())));
         }
 
-        return questions;
+        return jsonList.get(0);
     }
-
-
-
 }

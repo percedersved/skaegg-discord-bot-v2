@@ -14,14 +14,17 @@ public class TriviaTempListener {
 
     public Mono<Void> createTempListener(Trivia trivia, GatewayDiscordClient client) {
 
-        return client.on(ButtonInteractionEvent.class, buttonEvent -> {
+        client.on(ButtonInteractionEvent.class, buttonEvent -> {
                     if (buttonEvent.getCustomId().contains("trivia_")) {
                         return trivia.checkAnswer(buttonEvent);
                     }
-                    return Mono.empty();
+                    else {
+                        return Mono.empty();
+                    }
                 })
-                .timeout(Duration.ofSeconds(15L))
+                .timeout(Duration.ofMinutes(30L))
                 .onErrorResume(TimeoutException.class, ignore -> Mono.empty())
-                .then();
+                .subscribe();
+        return Mono.empty();
     }
 }

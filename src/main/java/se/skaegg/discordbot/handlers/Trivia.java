@@ -21,12 +21,16 @@ import org.springframework.web.util.HtmlUtils;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.PrematureCloseException;
 import se.skaegg.discordbot.clients.OpenTriviaClient;
-import se.skaegg.discordbot.dto.TriviaObject;
-import se.skaegg.discordbot.dto.TriviaResults;
+import se.skaegg.discordbot.clients.TheTriviaApiClient;
+import se.skaegg.discordbot.dto.OpenTriviaObject;
+import se.skaegg.discordbot.dto.OpenTriviaResults;
+import se.skaegg.discordbot.dto.TheTriviaApiResults;
 import se.skaegg.discordbot.jpa.*;
 import se.skaegg.discordbot.listeners.TriviaTempListener;
 
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -96,8 +100,9 @@ public class Trivia implements SlashCommand {
         client.getChannelById(Snowflake.of(channelId))
                 .ofType(MessageChannel.class)
                 .flatMap(channel -> channel.createMessage()
+                        .withContent("Klicka på \"Hämta\" för att hämta frågan. Du har 15 sekunder på dig att svara efter att du fått frågan")
                         .withComponents(ActionRow.of(
-                                        Button.secondary("getTodaysQuestion", "Hämta")
+                                        Button.secondary("getQuestion_" + LocalDate.now(), "Hämta")
                                 )
                         )
                 )
@@ -106,7 +111,7 @@ public class Trivia implements SlashCommand {
         return Mono.empty();
     }
 
-    public Mono<Void> createQuestions(String url, String queryParams, ButtonInteractionEvent event) {
+    public Mono<Void> createQuestions(String url, String queryParams, String source, LocalDate date, ButtonInteractionEvent event) {
         event.deferReply()
                 .withEphemeral(true)
                 .retry(3)
@@ -123,15 +128,28 @@ public class Trivia implements SlashCommand {
                     return Mono.empty();
                 }).subscribe();
 
-        TriviaObject triviaObject = new OpenTriviaClient(url, queryParams).process();
-        TriviaResults question = triviaObject.getResults().get(0);
+        if (source.equals("opentdb")) {
+            OpenTriviaObject triviaObject = new OpenTriviaClient(url, queryParams).process();
+            OpenTriviaResults question = triviaObject.getResults().get(0);
 
-        // If no question has been fetched from Open Trivia DB today add it to db
-        if (triviaQuestionsRepository.findByQuestionDate(LocalDate.now()) == null) {
-            saveQuestionToDb(question);
+            // If no question has been fetched from Open Trivia DB today add it to db
+            if (triviaQuestionsRepository.findByQuestionDate(date) == null) {
+                saveQuestionToDb(question);
+            }
+        }
+        else if (source.equals("the-trivia-api")) {
+            TheTriviaApiResults question = new TheTriviaApiClient(url, queryParams).process();
+
+            // If no question has been fetched from Open Trivia DB today add it to db
+            if (triviaQuestionsRepository.findByQuestionDate(date) == null) {
+                saveTheTriviaApiQuestionToDb(question);
+            }
+        }
+        else {
+            LOG.error("Couldnt determine if should use opentdb or the-trivia-api to get the question. Check property trivia.source");
         }
 
-        TriviaQuestionsEntity questionsEntity = triviaQuestionsRepository.findByQuestionDate(LocalDate.now());
+        TriviaQuestionsEntity questionsEntity = triviaQuestionsRepository.findByQuestionDate(date);
         int questionId = questionsEntity.getId();
         String correctAnswer = questionsEntity.getCorrectAnswer();
         List<String> incorrectAnswers = questionsEntity.getIncorrectAnswers();
@@ -197,6 +215,7 @@ public class Trivia implements SlashCommand {
         TriviaButtonClicksEntity triviaButtonClicksEntity = new TriviaButtonClicksEntity();
         triviaButtonClicksEntity.setUserId(interactionUser);
         triviaButtonClicksEntity.setQuestion(questionsEntity);
+        triviaButtonClicksEntity.setDateTimeClicked(LocalDateTime.now());
         triviaButtonClicksRepository.save(triviaButtonClicksEntity);
 
         return Mono.empty();
@@ -236,6 +255,15 @@ public class Trivia implements SlashCommand {
                     .withEphemeral(true)
                     .withContent("Du har redan svarat på den frågan")
                     .subscribe();
+            return Mono.empty();
+        }
+
+        else if (Duration.between(triviaButtonClicksRepository.findByUserIdAndQuestion(interactionUser, question).getDateTimeClicked(), LocalDateTime.now()).getSeconds() > 15L) {
+            event.createFollowup()
+                    .withEphemeral(true)
+                    .withContent("Dina 15 sekunder har gått så nu får du inte svara. Du får snabba på lite nästa gång")
+                    .subscribe();
+            return Mono.empty();
         }
 
         else {
@@ -280,7 +308,7 @@ public class Trivia implements SlashCommand {
                 client.getChannelById(channelIdSnowFlake) // This needs to be done with client since you cant mix ephemeral responses with normal
                         .ofType(MessageChannel.class)
                         .flatMap(channel -> channel.createMessage()
-                                .withContent(":green_circle: <@" + userId + "> svarade rätt på frågan:\n*" + question.getQuestion() + "*"))
+                                .withContent(":green_circle: <@" + userId + "> svarade rätt på en fråga"))
                         .subscribe();
                 LOG.debug("The public message created with client has been sent");
             } else {
@@ -295,16 +323,17 @@ public class Trivia implements SlashCommand {
                 client.getChannelById(channelIdSnowFlake) // This needs to be done with client since you cant mix ephemeral responses with normal
                         .ofType(MessageChannel.class)
                         .flatMap(channel -> channel.createMessage()
-                                .withContent(":red_circle: <@" + userId + "> svarade fel på frågan:\n*" + question.getQuestion() + "*"))
+                                .withContent(":red_circle: <@" + userId + "> svarade fel på en fråga"))
                         .subscribe();
                 LOG.debug("The public message created with client has been sent");
             }
             LOG.debug("The checking of the answer is done");
             triviaScoresRepository.save(scoresEntity);
             LOG.debug("The answer has been saved to the database");
+
+            LOG.debug("Everything is done and now we just return Mono.empty");
+            return Mono.empty();
         }
-        LOG.debug("Everything is done and now we just return Mono.empty");
-        return Mono.empty();
     }
 
 
@@ -376,7 +405,7 @@ public class Trivia implements SlashCommand {
     }
 
 
-    private void saveQuestionToDb(TriviaResults question) {
+    private void saveQuestionToDb(OpenTriviaResults question) {
         String correctAnswer = HtmlUtils.htmlUnescape(question.getCorrectAnswer());
         List<String> incorrectAnswers = question.getIncorrectAnswers();
 
@@ -400,6 +429,30 @@ public class Trivia implements SlashCommand {
         triviaQuestionsRepository.save(entity);
     }
 
+
+    private void saveTheTriviaApiQuestionToDb(TheTriviaApiResults question) {
+        String correctAnswer = HtmlUtils.htmlUnescape(question.getCorrectAnswer());
+        List<String> incorrectAnswers = question.getIncorrectAnswers();
+
+        TriviaQuestionsEntity entity = new TriviaQuestionsEntity();
+        entity.setQuestion(HtmlUtils.htmlUnescape(question.getQuestion()));
+        entity.setCorrectAnswer(correctAnswer);
+        entity.setCategory(question.getCategory());
+        entity.setDifficulty(question.getDifficulty());
+        entity.setType(question.getType());
+        entity.setQuestionDate(LocalDate.now());
+
+        if (question.getType().equals("Multiple Choice")) {
+            entity.setIncorrectAnswer1(incorrectAnswers.get(0));
+            entity.setIncorrectAnswer2(incorrectAnswers.get(1));
+            entity.setIncorrectAnswer3(incorrectAnswers.get(2));
+        }
+        else {
+            entity.setIncorrectAnswer1(incorrectAnswers.get(0));
+        }
+
+        triviaQuestionsRepository.save(entity);
+    }
 
     public void displayCorrectAnswerPercentForDate(LocalDate date, String channelId) {
 

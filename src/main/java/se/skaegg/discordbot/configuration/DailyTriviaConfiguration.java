@@ -43,7 +43,6 @@ public class DailyTriviaConfiguration {
     public void createDailyTriviaMessage() {
 
         Trivia trivia = new Trivia(triviaQuestionsRepository, triviaScoresRepository, triviaButtonClicksRepository, client);
-//        trivia.createQuestions(url, queryParams, channelId);
         trivia.createGetQuestionButton(channelId);
     }
 

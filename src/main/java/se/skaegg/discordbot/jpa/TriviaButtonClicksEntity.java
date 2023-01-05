@@ -1,6 +1,7 @@
 package se.skaegg.discordbot.jpa;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "trivia_button_clicks")
@@ -16,6 +17,9 @@ public class TriviaButtonClicksEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_id", nullable = false)
     TriviaQuestionsEntity question;
+
+    @Column(name = "date_time_clicked")
+    LocalDateTime dateTimeClicked;
 
 
     public Integer getId() {
@@ -40,5 +44,13 @@ public class TriviaButtonClicksEntity {
 
     public void setQuestion(TriviaQuestionsEntity question) {
         this.question = question;
+    }
+
+    public LocalDateTime getDateTimeClicked() {
+        return dateTimeClicked;
+    }
+
+    public void setDateTimeClicked(LocalDateTime dateTimeClicked) {
+        this.dateTimeClicked = dateTimeClicked;
     }
 }

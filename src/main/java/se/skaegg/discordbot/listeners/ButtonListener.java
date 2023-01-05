@@ -11,6 +11,10 @@ import se.skaegg.discordbot.jpa.TriviaButtonClicksRepository;
 import se.skaegg.discordbot.jpa.TriviaQuestionsRepository;
 import se.skaegg.discordbot.jpa.TriviaScoresRepository;
 
+import java.time.LocalDate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 @Component
 public class ButtonListener {
 
@@ -23,6 +27,8 @@ public class ButtonListener {
     @Autowired
     GatewayDiscordClient client;
 
+    @Value("${trivia.source}")
+    String source;
     @Value("${trivia.url}")
     String url;
     @Value("${trivia.queryparams}")
@@ -34,14 +40,22 @@ public class ButtonListener {
 
     private Mono<Void> handle(ButtonInteractionEvent event) {
 
-//        if (event.getCustomId().contains("trivia_")) {
-//            return new Trivia(triviaQuestionsRepository, triviaScoresRepository, client).checkAnswer(event);
+//        if (event.getCustomId().equals("getTodaysQuestion")){
+//            return new Trivia(triviaQuestionsRepository, triviaScoresRepository, triviaButtonClicksRepository, client).createQuestions(url, queryParams, source, event);
 //        }
-        if (event.getCustomId().equals("getTodaysQuestion")){
-            return new Trivia(triviaQuestionsRepository, triviaScoresRepository, triviaButtonClicksRepository, client).createQuestions(url, queryParams, event);
+
+        String buttonId = event.getCustomId();
+
+        if (buttonId.startsWith("getQuestion_")){
+            String date;
+            Pattern p = Pattern.compile("(.*)_(.*)");
+            Matcher m = p.matcher(buttonId);
+            if (m.find()) {
+                date = m.group(2);
+                LocalDate localDate = LocalDate.parse(date);
+                return new Trivia(triviaQuestionsRepository, triviaScoresRepository, triviaButtonClicksRepository, client).createQuestions(url, queryParams, source, localDate, event);
+            }
         }
-        else {
-            return Mono.empty();
-        }
+        return Mono.empty();
     }
 }
