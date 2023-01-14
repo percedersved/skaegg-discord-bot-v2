@@ -55,6 +55,9 @@ public class Trivia implements SlashCommand {
     @Value("${trivia.results.maxresults}")
     Integer maxResults;
 
+    @Value("#{'${serverIds}'.split(',')}")
+    List<String> serverIds;
+
 
     public Trivia(TriviaQuestionsRepository triviaQuestionsRepository,
                   TriviaScoresRepository triviaScoresRepository,
@@ -489,7 +492,7 @@ public class Trivia implements SlashCommand {
 
         for (TriviaAnswersPerUserMonth row : answersPerUserMonth) {
             String user = Objects.requireNonNull(client.
-                    getMemberById(Snowflake.of(841042241107394650L), Snowflake.of(row.getUserId())).block()).getDisplayName();
+                    getMemberById(Snowflake.of(serverIds.get(1)), Snowflake.of(row.getUserId())).block()).getDisplayName();
             userBuilder.append(user);
             userBuilder.append("\n");
             pointsBuilder.append(row.getPoints());
