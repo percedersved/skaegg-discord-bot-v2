@@ -134,7 +134,7 @@ public class TriviaQuestionsEntity {
     }
 
     public List<String> getIncorrectAnswers() {
-        if (this.getType().equals("multiple")) {
+        if (this.getType().equals("multiple") || this.getType().equals("Multiple Choice")) {
             return List.of(this.incorrectAnswer1, this.incorrectAnswer2, this.incorrectAnswer3);
         }
         else {

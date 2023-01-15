@@ -45,7 +45,8 @@ public class TheTriviaApiResults {
     }
 
     public String getType() {
-        return type;
+        // This is to handle the-trivia-api that has type=Multiple Choice, and we want "multiple" in db
+        return type.equals("Multiple Choice") ? "multiple" : type;
     }
 
     public void setType(String type) {

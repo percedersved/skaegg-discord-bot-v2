@@ -131,22 +131,16 @@ public class Trivia implements SlashCommand {
                     return Mono.empty();
                 }).subscribe();
 
-        if (source.equals("opentdb")) {
+        // If source is opentdb and no question has been fetched from the API today, get new question and save to DB
+        if (source.equals("opentdb") && triviaQuestionsRepository.findByQuestionDate(date) == null) {
             OpenTriviaObject triviaObject = new OpenTriviaClient(url, queryParams).process();
             OpenTriviaResults question = triviaObject.getResults().get(0);
-
-            // If no question has been fetched from Open Trivia DB today add it to db
-            if (triviaQuestionsRepository.findByQuestionDate(date) == null) {
-                saveQuestionToDb(question);
-            }
+            saveQuestionToDb(question);
         }
-        else if (source.equals("the-trivia-api")) {
+        // If source is the-trivia-api and no question has been fetched from the API today, get new question and save to DB
+        else if (source.equals("the-trivia-api") && triviaQuestionsRepository.findByQuestionDate(date) == null) {
             TheTriviaApiResults question = new TheTriviaApiClient(url, queryParams).process();
-
-            // If no question has been fetched from Open Trivia DB today add it to db
-            if (triviaQuestionsRepository.findByQuestionDate(date) == null) {
-                saveTheTriviaApiQuestionToDb(question);
-            }
+            saveTheTriviaApiQuestionToDb(question);
         }
         else {
             LOG.error("Couldnt determine if should use opentdb or the-trivia-api to get the question. Check property trivia.source");
@@ -492,7 +486,7 @@ public class Trivia implements SlashCommand {
 
         for (TriviaAnswersPerUserMonth row : answersPerUserMonth) {
             String user = Objects.requireNonNull(client.
-                    getMemberById(Snowflake.of(serverIds.get(1)), Snowflake.of(row.getUserId())).block()).getDisplayName();
+                    getMemberById(event.getInteraction().getGuildId().get(), Snowflake.of(row.getUserId())).block()).getDisplayName();
             userBuilder.append(user);
             userBuilder.append("\n");
             pointsBuilder.append(row.getPoints());
