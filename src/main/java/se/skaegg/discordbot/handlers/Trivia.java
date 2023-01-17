@@ -48,6 +48,10 @@ public class Trivia implements SlashCommand {
 
     private static final Logger LOG = LoggerFactory.getLogger(Trivia.class);
 
+    private static final Integer ANSWERING_TIME_LIMIT = 18;
+    private static final Integer ANSWERING_TIME_REMINDER = 10;
+    private static final String ANSWERING_TIME_REMINDER_TEXT = "Du har endast 5 sekunder kvar, synda synda!";
+
     @Value("${trivia.url}")
     String url;
     @Value("${trivia.queryparams}")
@@ -189,6 +193,8 @@ public class Trivia implements SlashCommand {
                     .retry(3)
                     .then(new TriviaTempListener().createTempListener(this, client))
                     .subscribe();
+
+            startAnsweringTimer(event);
         }
         else if (allAnswers.size() == 2) {
             event.createFollowup()
@@ -202,6 +208,8 @@ public class Trivia implements SlashCommand {
                     .retry(3)
                     .then(new TriviaTempListener().createTempListener(this, client))
                     .subscribe();
+
+            startAnsweringTimer(event);
         }
         else {
             LOG.error("Something went wrong with the answers. There should only be 2 or 4 answers in the API response. Number of answers were {}", allAnswers.size());
@@ -216,6 +224,21 @@ public class Trivia implements SlashCommand {
         triviaButtonClicksRepository.save(triviaButtonClicksEntity);
 
         return Mono.empty();
+    }
+
+    private void startAnsweringTimer(ButtonInteractionEvent event) {
+        new Thread(() -> {
+            try {
+                Thread.sleep(ANSWERING_TIME_REMINDER);
+                event.createFollowup()
+                    .withEphemeral(true)
+                    .withContent(ANSWERING_TIME_REMINDER_TEXT)
+                    .subscribe();
+            }
+            catch (Exception e){
+                LOG.error("Something went wrong in the timer thread: {}", e.getMessage());
+            }
+        }).start();
     }
 
 
@@ -255,7 +278,7 @@ public class Trivia implements SlashCommand {
             return Mono.empty();
         }
 
-        else if (Duration.between(triviaButtonClicksRepository.findByUserIdAndQuestion(interactionUser, question).getDateTimeClicked(), LocalDateTime.now()).getSeconds() > 15L) {
+        else if (Duration.between(triviaButtonClicksRepository.findByUserIdAndQuestion(interactionUser, question).getDateTimeClicked(), LocalDateTime.now()).getSeconds() > ANSWERING_TIME_LIMIT) {
             event.createFollowup()
                     .withEphemeral(true)
                     .withContent("Dina 15 sekunder har gått så nu får du inte svara. Du får snabba på lite nästa gång")
