@@ -44,23 +44,17 @@ public class Trivia implements SlashCommand {
     TriviaQuestionsRepository triviaQuestionsRepository;
     TriviaScoresRepository triviaScoresRepository;
     TriviaButtonClicksRepository triviaButtonClicksRepository;
+    private Thread answerTimerThread;
     GatewayDiscordClient client;
+    String interactionUser;
 
     private static final Logger LOG = LoggerFactory.getLogger(Trivia.class);
-
-    private static final Integer ANSWERING_TIME_LIMIT = 18;
-    private static final Integer ANSWERING_TIME_REMINDER = 10;
+    private static final int ANSWERING_TIME_LIMIT = 18; // Seconds
+    private static final Long ANSWERING_TIME_REMINDER = 10000L; // Milliseconds
     private static final String ANSWERING_TIME_REMINDER_TEXT = "Du har endast 5 sekunder kvar, synda synda!";
 
-    @Value("${trivia.url}")
-    String url;
-    @Value("${trivia.queryparams}")
-    String queryParams;
     @Value("${trivia.results.maxresults}")
     Integer maxResults;
-
-    @Value("#{'${serverIds}'.split(',')}")
-    List<String> serverIds;
 
 
     public Trivia(TriviaQuestionsRepository triviaQuestionsRepository,
@@ -135,8 +129,11 @@ public class Trivia implements SlashCommand {
                     return Mono.empty();
                 }).subscribe();
 
+        if (!source.equals("opentdb") && !source.equals("the-trivia-api")) {
+            LOG.error("Could not determine if we should use opentdb or the-trivia-api. Check property trivia.source");
+        }
         // If source is opentdb and no question has been fetched from the API today, get new question and save to DB
-        if (source.equals("opentdb") && triviaQuestionsRepository.findByQuestionDate(date) == null) {
+        else if (source.equals("opentdb") && triviaQuestionsRepository.findByQuestionDate(date) == null) {
             OpenTriviaObject triviaObject = new OpenTriviaClient(url, queryParams).process();
             OpenTriviaResults question = triviaObject.getResults().get(0);
             saveQuestionToDb(question);
@@ -147,7 +144,7 @@ public class Trivia implements SlashCommand {
             saveTheTriviaApiQuestionToDb(question);
         }
         else {
-            LOG.error("Couldnt determine if should use opentdb or the-trivia-api to get the question. Check property trivia.source");
+            LOG.info("Question already in database for this date, no new question was fetched");
         }
 
         TriviaQuestionsEntity questionsEntity = triviaQuestionsRepository.findByQuestionDate(date);
@@ -156,7 +153,7 @@ public class Trivia implements SlashCommand {
         List<String> incorrectAnswers = questionsEntity.getIncorrectAnswers();
 
         // Check if the user already fetched todays question. You may only do this once
-        String interactionUser = event.getInteraction().getUser().getId().asString();
+        interactionUser = event.getInteraction().getUser().getId().asString();
         if (triviaButtonClicksRepository.findByUserIdAndQuestion(interactionUser, questionsEntity) != null) {
             event.createFollowup()
                     .withEphemeral(true)
@@ -194,7 +191,7 @@ public class Trivia implements SlashCommand {
                     .then(new TriviaTempListener().createTempListener(this, client))
                     .subscribe();
 
-            startAnsweringTimer(event);
+            startAnsweringTimer(event, ANSWERING_TIME_REMINDER);
         }
         else if (allAnswers.size() == 2) {
             event.createFollowup()
@@ -209,7 +206,7 @@ public class Trivia implements SlashCommand {
                     .then(new TriviaTempListener().createTempListener(this, client))
                     .subscribe();
 
-            startAnsweringTimer(event);
+            startAnsweringTimer(event, ANSWERING_TIME_REMINDER);
         }
         else {
             LOG.error("Something went wrong with the answers. There should only be 2 or 4 answers in the API response. Number of answers were {}", allAnswers.size());
@@ -226,19 +223,29 @@ public class Trivia implements SlashCommand {
         return Mono.empty();
     }
 
-    private void startAnsweringTimer(ButtonInteractionEvent event) {
-        new Thread(() -> {
-            try {
-                Thread.sleep(ANSWERING_TIME_REMINDER);
-                event.createFollowup()
-                    .withEphemeral(true)
-                    .withContent(ANSWERING_TIME_REMINDER_TEXT)
-                    .subscribe();
+    private void startAnsweringTimer(ButtonInteractionEvent event, long timeReminder) {
+        answerTimerThread = new Thread(() -> {
+            while (!answerTimerThread.isInterrupted()) {
+                try {
+                    Thread.sleep(timeReminder);
+                    event.createFollowup()
+                        .withEphemeral(true)
+                        .withContent(ANSWERING_TIME_REMINDER_TEXT)
+                        .subscribe();
+                    stopAnsweringTimer();
+                }
+                catch (InterruptedException e){
+                    // This means that the thread has been interrupted by stopAnsweringTimer which is fine. Just break out of loop;
+                    break;
+                }
             }
-            catch (Exception e){
-                LOG.error("Something went wrong in the timer thread: {}", e.getMessage());
-            }
-        }).start();
+        });
+        answerTimerThread.start();
+    }
+
+    public void stopAnsweringTimer() {
+        this.answerTimerThread.interrupt();
+        LOG.debug("Current number of threads in thread group when interrupting current Trivia thread: {}", Thread.activeCount());
     }
 
 
@@ -462,7 +469,7 @@ public class Trivia implements SlashCommand {
         entity.setType(question.getType());
         entity.setQuestionDate(LocalDate.now());
 
-        if (question.getType().equals("Multiple Choice")) {
+        if (question.getType().equals("multiple")) {
             entity.setIncorrectAnswer1(incorrectAnswers.get(0));
             entity.setIncorrectAnswer2(incorrectAnswers.get(1));
             entity.setIncorrectAnswer3(incorrectAnswers.get(2));
@@ -532,6 +539,9 @@ public class Trivia implements SlashCommand {
 
         return Mono.empty();
     }
+
+
+    public String getInteractionUser() { return interactionUser; }
 
 
     enum scoresPeriod {
