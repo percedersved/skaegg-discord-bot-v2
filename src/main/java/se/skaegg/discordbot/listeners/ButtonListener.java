@@ -40,10 +40,6 @@ public class ButtonListener {
 
     private Mono<Void> handle(ButtonInteractionEvent event) {
 
-//        if (event.getCustomId().equals("getTodaysQuestion")){
-//            return new Trivia(triviaQuestionsRepository, triviaScoresRepository, triviaButtonClicksRepository, client).createQuestions(url, queryParams, source, event);
-//        }
-
         String buttonId = event.getCustomId();
 
         if (buttonId.startsWith("getQuestion_")){
@@ -53,7 +49,11 @@ public class ButtonListener {
             if (m.find()) {
                 date = m.group(2);
                 LocalDate localDate = LocalDate.parse(date);
-                return new Trivia(triviaQuestionsRepository, triviaScoresRepository, triviaButtonClicksRepository, client).createQuestions(url, queryParams, source, localDate, event);
+                return new Trivia(triviaQuestionsRepository,
+                        triviaScoresRepository,
+                        triviaButtonClicksRepository,
+                        client)
+                        .createQuestions(url, queryParams, source, localDate, event);
             }
         }
         return Mono.empty();

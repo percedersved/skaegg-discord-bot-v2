@@ -240,6 +240,7 @@ public class Trivia implements SlashCommand {
                 }
             }
         });
+        answerTimerThread.setName("answeringTimerThread");
         answerTimerThread.start();
     }
 
