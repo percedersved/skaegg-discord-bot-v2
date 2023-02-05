@@ -294,74 +294,79 @@ public class Trivia implements SlashCommand {
             return Mono.empty();
         }
 
-        else {
-            Map<String, String> answersMap = new HashMap<>();
-            // Get information about the buttons
-            List<ComponentData> compData = event.getMessage()
-                    .get()
-                    .getComponents()
-                    .get(0)
-                    .getData()
-                    .components()
-                    .get();
+        Map<String, String> answersMap = new HashMap<>();
+        // Get information about the buttons
+        List<ComponentData> compData = event.getMessage()
+                .get()
+                .getComponents()
+                .get(0)
+                .getData()
+                .components()
+                .get();
 
-            // Get CustomId and Label och the buttons and put them in a map
-            for (ComponentData data : compData) {
-                answersMap.put(data.customId().get(), data.label().get());
-            }
-
-            String correctAnswerCustomId = questionId + "_trivia_correct_answer";
-            String correctAnswerLabel = answersMap.get(correctAnswerCustomId);
-
-            String userId = event.getInteraction().getUser().getId().asString();
-
-            Snowflake channelIdSnowFlake = Objects.requireNonNull(event.getMessage().get().getChannel().block()).getId();
-
-            TriviaScoresEntity scoresEntity = new TriviaScoresEntity();
-            scoresEntity.setAnswerDate(LocalDate.now());
-            scoresEntity.setQuestion(question);
-            scoresEntity.setUserId(userId);
-
-            LOG.debug("{} pushed an answer button with customID: {}. Now we will try to find out if the answer was right or wrong", userId, event.getCustomId());
-
-            if (event.getCustomId().equals(correctAnswerCustomId)) {
-                LOG.debug("The answer was correct");
-                scoresEntity.setCorrectAnswer(true);
-                event.createFollowup() // This needs to be here since discord awaits a response/followup, otherwise the bot will show "thinking" forever
-                        .withContent("Snyggt, du svarade rätt!")
-                        .withEphemeral(true)
-                        .retry(3)
-                        .subscribe();
-                LOG.debug("The followup has been created for the correct answer");
-                client.getChannelById(channelIdSnowFlake) // This needs to be done with client since you cant mix ephemeral responses with normal
-                        .ofType(MessageChannel.class)
-                        .flatMap(channel -> channel.createMessage()
-                                .withContent(":green_circle: <@" + userId + "> svarade rätt på en fråga"))
-                        .subscribe();
-                LOG.debug("The public message created with client has been sent");
-            } else {
-                LOG.debug("The answer was incorrect");
-                scoresEntity.setCorrectAnswer(false);
-                event.createFollowup()
-                        .withEphemeral(true)
-                        .withContent("Rätt svar var: " + correctAnswerLabel)
-                        .retry(3)
-                        .subscribe();
-                LOG.debug("The followup has been created for the correct answer");
-                client.getChannelById(channelIdSnowFlake) // This needs to be done with client since you cant mix ephemeral responses with normal
-                        .ofType(MessageChannel.class)
-                        .flatMap(channel -> channel.createMessage()
-                                .withContent(":red_circle: <@" + userId + "> svarade fel på en fråga"))
-                        .subscribe();
-                LOG.debug("The public message created with client has been sent");
-            }
-            LOG.debug("The checking of the answer is done");
-            triviaScoresRepository.save(scoresEntity);
-            LOG.debug("The answer has been saved to the database");
-
-            LOG.debug("Everything is done and now we just return Mono.empty");
-            return Mono.empty();
+        // Get CustomId and Label och the buttons and put them in a map
+        for (ComponentData data : compData) {
+            answersMap.put(data.customId().get(), data.label().get());
         }
+
+        String correctAnswerCustomId = questionId + "_trivia_correct_answer";
+        String correctAnswerLabel = answersMap.get(correctAnswerCustomId);
+
+        String userId = event.getInteraction().getUser().getId().asString();
+
+        LocalDate questionDate = question.getQuestionDate();
+        String publicDisplayStringCorrect = questionDate.equals(LocalDate.now()) ? ":green_circle: <@" + userId + "> " + "svarade rätt på dagens fråga" :
+                ":green_circle: <@" + userId + "> " + "svarade rätt på frågan från " + questionDate;
+        String publicDisplayStringIncorrect = questionDate.equals(LocalDate.now()) ? ":red_circle: <@" + userId + "> svarade fel på dagens fråga " :
+                ":red_circle: <@" + userId + "> svarade fel på frågan från " + questionDate;
+
+        Snowflake channelIdSnowFlake = Objects.requireNonNull(event.getMessage().get().getChannel().block()).getId();
+
+        TriviaScoresEntity scoresEntity = new TriviaScoresEntity();
+        scoresEntity.setAnswerDate(LocalDate.now());
+        scoresEntity.setQuestion(question);
+        scoresEntity.setUserId(userId);
+
+        LOG.debug("{} pushed an answer button with customID: {}. Now we will try to find out if the answer was right or wrong", userId, event.getCustomId());
+
+        if (event.getCustomId().equals(correctAnswerCustomId)) {
+            LOG.debug("The answer was correct");
+            scoresEntity.setCorrectAnswer(true);
+            event.createFollowup() // This needs to be here since discord awaits a response/followup, otherwise the bot will show "thinking" forever
+                    .withContent("Snyggt, du svarade rätt!")
+                    .withEphemeral(true)
+                    .retry(3)
+                    .subscribe();
+            LOG.debug("The followup has been created for the correct answer");
+            client.getChannelById(channelIdSnowFlake) // This needs to be done with client since you cant mix ephemeral responses with normal
+                    .ofType(MessageChannel.class)
+                    .flatMap(channel -> channel.createMessage()
+                            .withContent(publicDisplayStringCorrect))
+                    .subscribe();
+            LOG.debug("The public message created with client has been sent");
+        } else {
+            LOG.debug("The answer was incorrect");
+            scoresEntity.setCorrectAnswer(false);
+            event.createFollowup()
+                    .withEphemeral(true)
+                    .withContent("Rätt svar var: " + correctAnswerLabel)
+                    .retry(3)
+                    .subscribe();
+            LOG.debug("The followup has been created for the correct answer");
+            client.getChannelById(channelIdSnowFlake) // This needs to be done with client since you cant mix ephemeral responses with normal
+                    .ofType(MessageChannel.class)
+                    .flatMap(channel -> channel.createMessage()
+                            .withContent(publicDisplayStringIncorrect))
+                    .subscribe();
+            LOG.debug("The public message created with client has been sent");
+        }
+        LOG.debug("The checking of the answer is done");
+        triviaScoresRepository.save(scoresEntity);
+        LOG.debug("The answer has been saved to the database");
+
+        LOG.debug("Everything is done and now we just return Mono.empty");
+        return Mono.empty();
+
     }
 
 
@@ -489,7 +494,6 @@ public class Trivia implements SlashCommand {
 
         String text = percentageFormatted +
                 "% svarade rätt på gårdagens fråga: \n*" +
-                percentageForDate.getQuestion() +
                 "*";
 
         client.getChannelById(Snowflake.of(channelId))

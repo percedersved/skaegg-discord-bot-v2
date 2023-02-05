@@ -25,7 +25,6 @@ public class TriviaTempListener {
                     else {
                         return Mono.empty();
                     }
-
                 })
                 .timeout(Duration.ofMinutes(1L))
                 .onErrorResume(TimeoutException.class, ignore -> Mono.empty())
