@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import se.skaegg.discordbot.handlers.Trivia;
+import se.skaegg.discordbot.jpa.TriviaButtonClicksRepository;
 import se.skaegg.discordbot.jpa.TriviaQuestionsRepository;
 import se.skaegg.discordbot.jpa.TriviaScoresRepository;
 
@@ -25,25 +26,29 @@ public class DailyTriviaConfiguration {
 
     TriviaScoresRepository triviaScoresRepository;
     TriviaQuestionsRepository triviaQuestionsRepository;
+    TriviaButtonClicksRepository triviaButtonClicksRepository;
 
     @Autowired
     GatewayDiscordClient client;
 
-    public DailyTriviaConfiguration(TriviaQuestionsRepository triviaQuestionsRepository, TriviaScoresRepository triviaScoresRepository) {
+    public DailyTriviaConfiguration(TriviaQuestionsRepository triviaQuestionsRepository,
+                                    TriviaScoresRepository triviaScoresRepository,
+                                    TriviaButtonClicksRepository triviaButtonClicksRepository) {
         this.triviaQuestionsRepository = triviaQuestionsRepository;
         this.triviaScoresRepository = triviaScoresRepository;
+        this.triviaButtonClicksRepository = triviaButtonClicksRepository;
     }
 
     @Scheduled(cron = "${trivia.cron.expression}")
     public void createDailyTriviaMessage() {
 
-        Trivia trivia = new Trivia(triviaQuestionsRepository, triviaScoresRepository, client);
-        trivia.createQuestions(url, queryParams, channelId);
+        Trivia trivia = new Trivia(triviaQuestionsRepository, triviaScoresRepository, triviaButtonClicksRepository, client);
+        trivia.createGetQuestionButton(channelId);
     }
 
     @Scheduled(cron = "${trivia.cron.dailypercentage}")
     public void createYesterdayTriviaCorrect() {
-        Trivia trivia = new Trivia(triviaQuestionsRepository, triviaScoresRepository, client);
+        Trivia trivia = new Trivia(triviaQuestionsRepository, triviaScoresRepository, triviaButtonClicksRepository, client);
         trivia.displayCorrectAnswerPercentForDate(LocalDate.now().minusDays(1L), channelId);
     }
 

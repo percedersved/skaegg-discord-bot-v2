@@ -23,6 +23,25 @@
       "name": "ställning_alltime",
       "description": "Visa ställningen för all tid",
       "type": 1
+    },
+    {
+      "name": "andel_svar_månad",
+      "description": "Visar andel svarade frågor för en specifik månad.",
+      "type": 1,
+      "options": [
+        {
+          "name": "år",
+          "description": "År för vilken månad du vill se andelen svar. Anges yyyy",
+          "type": 4,
+          "required": true
+        },
+        {
+          "name": "månad",
+          "description": "Månad för vilken du vill se andelen svar. Anges MM",
+          "type": 4,
+          "required": true
+        }
+      ]
     }
     ]
 }
