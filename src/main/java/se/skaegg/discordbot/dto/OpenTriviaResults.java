@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-public class OpenTriviaResults {
+public class OpenTriviaResults implements TriviaResults {
     @JsonProperty("category")
     String category;
     @JsonProperty("type")

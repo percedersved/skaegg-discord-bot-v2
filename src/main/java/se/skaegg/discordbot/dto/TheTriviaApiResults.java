@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-public class TheTriviaApiResults {
+public class TheTriviaApiResults implements TriviaResults{
 
     @JsonProperty("id")
     String id;

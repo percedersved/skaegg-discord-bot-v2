@@ -23,8 +23,7 @@ import reactor.netty.http.client.PrematureCloseException;
 import se.skaegg.discordbot.clients.OpenTriviaClient;
 import se.skaegg.discordbot.clients.TheTriviaApiClient;
 import se.skaegg.discordbot.dto.OpenTriviaObject;
-import se.skaegg.discordbot.dto.OpenTriviaResults;
-import se.skaegg.discordbot.dto.TheTriviaApiResults;
+import se.skaegg.discordbot.dto.TriviaResults;
 import se.skaegg.discordbot.jpa.*;
 import se.skaegg.discordbot.listeners.TriviaTempListener;
 
@@ -47,10 +46,11 @@ public class Trivia implements SlashCommand {
     private Thread answerTimerThread;
     GatewayDiscordClient client;
     String interactionUser;
+    int numOfCharsQuestionsAnswers;
 
     private static final Logger LOG = LoggerFactory.getLogger(Trivia.class);
-    private static final int ANSWERING_TIME_LIMIT = 18; // Seconds
-    private static final Long ANSWERING_TIME_REMINDER = 10000L; // Milliseconds
+    private static final int ANSWERING_TIME_LIMIT = 13; // Seconds
+    private static final Long ANSWERING_TIME_REMINDER = 5000L; // Milliseconds
     private static final String ANSWERING_TIME_REMINDER_TEXT = "Du har endast 5 sekunder kvar, synda synda!";
 
     @Value("${trivia.results.maxresults}")
@@ -78,21 +78,27 @@ public class Trivia implements SlashCommand {
         String subCommandName = subCommand.getName();
 
         switch (subCommandName) {
-            case "dagens":
+            case "dagens" -> {
                 event.reply("Dagens fråga").subscribe();
                 String manualChannelId = event.getInteraction().getChannelId().asString();
                 return createGetQuestionButton(manualChannelId);
-            case "ställning_innevarande":
+            }
+            case "ställning_innevarande" -> {
                 return showStandings(event, scoresPeriod.CURRENT_MONTH);
-            case "ställning_föregående":
+            }
+            case "ställning_föregående" -> {
                 return showStandings(event, scoresPeriod.PREVIOUS_MONTH);
-            case "ställning_alltime":
+            }
+            case "ställning_alltime" -> {
                 return showStandings(event, scoresPeriod.ALL_TIME);
-            case "andel_svar_månad":
+            }
+            case "andel_svar_månad" -> {
                 List<ApplicationCommandInteractionOption> subCommandOptions = subCommand.getOptions();
                 return displayAnswersPerUserAndMonth(event, subCommandOptions);
-            default:
+            }
+            default -> {
                 return Mono.empty();
+            }
         }
     }
 
@@ -101,9 +107,10 @@ public class Trivia implements SlashCommand {
         client.getChannelById(Snowflake.of(channelId))
                 .ofType(MessageChannel.class)
                 .flatMap(channel -> channel.createMessage()
-                        .withContent("Klicka på \"Hämta\" för att hämta frågan. Du har 15 sekunder på dig att svara efter att du fått frågan")
+                        .withContent("Klicka på \"Hämta\" för att hämta frågan. " +
+                                "Du har en begränsad tid på dig att svara efter att du fått frågan, en varning kommer när du har 5 sekunder på dig")
                         .withComponents(ActionRow.of(
-                                        Button.secondary("getQuestion_" + LocalDate.now(), "Hämta")
+                                        Button.danger("getQuestion_" + LocalDate.now(), "Hämta")
                                 )
                         )
                 )
@@ -129,30 +136,15 @@ public class Trivia implements SlashCommand {
                     return Mono.empty();
                 }).subscribe();
 
-        if (!source.equals("opentdb") && !source.equals("the-trivia-api")) {
-            LOG.error("Could not determine if we should use opentdb or the-trivia-api. Check property trivia.source");
-        }
-        // If source is opentdb and no question has been fetched from the API today, get new question and save to DB
-        else if (source.equals("opentdb") && triviaQuestionsRepository.findByQuestionDate(date) == null) {
-            OpenTriviaObject triviaObject = new OpenTriviaClient(url, queryParams).process();
-            OpenTriviaResults question = triviaObject.getResults().get(0);
-            saveQuestionToDb(question);
-        }
-        // If source is the-trivia-api and no question has been fetched from the API today, get new question and save to DB
-        else if (source.equals("the-trivia-api") && triviaQuestionsRepository.findByQuestionDate(date) == null) {
-            TheTriviaApiResults question = new TheTriviaApiClient(url, queryParams).process();
-            saveTheTriviaApiQuestionToDb(question);
-        }
-        else {
-            LOG.info("Question already in database for this date, no new question was fetched");
-        }
+        // Get question from API, check that no answers are over 80 characters and save to DB
+        checkAndSaveQuestion(source, date, url, queryParams);
 
         TriviaQuestionsEntity questionsEntity = triviaQuestionsRepository.findByQuestionDate(date);
         int questionId = questionsEntity.getId();
         String correctAnswer = questionsEntity.getCorrectAnswer();
         List<String> incorrectAnswers = questionsEntity.getIncorrectAnswers();
 
-        // Check if the user already fetched todays question. You may only do this once
+        // Check if the user already fetched today's question. You may only do this once
         interactionUser = event.getInteraction().getUser().getId().asString();
         if (triviaButtonClicksRepository.findByUserIdAndQuestion(interactionUser, questionsEntity) != null) {
             event.createFollowup()
@@ -173,6 +165,12 @@ public class Trivia implements SlashCommand {
         // Shuffle the list so the correct answer isn't always in the same place
         Collections.shuffle(allAnswers);
 
+        numOfCharsQuestionsAnswers = allAnswers.stream()
+                .mapToInt(String::length)
+                .sum();
+
+        numOfCharsQuestionsAnswers += questionsEntity.getQuestion().length();
+
 
         if (answersMap.size() == 4) {
             event.createFollowup()
@@ -191,7 +189,7 @@ public class Trivia implements SlashCommand {
                     .then(new TriviaTempListener().createTempListener(this, client))
                     .subscribe();
 
-            startAnsweringTimer(event, ANSWERING_TIME_REMINDER);
+            startAnsweringTimer(event, ANSWERING_TIME_REMINDER, numOfCharsQuestionsAnswers);
         }
         else if (allAnswers.size() == 2) {
             event.createFollowup()
@@ -206,7 +204,7 @@ public class Trivia implements SlashCommand {
                     .then(new TriviaTempListener().createTempListener(this, client))
                     .subscribe();
 
-            startAnsweringTimer(event, ANSWERING_TIME_REMINDER);
+            startAnsweringTimer(event, ANSWERING_TIME_REMINDER, numOfCharsQuestionsAnswers);
         }
         else {
             LOG.error("Something went wrong with the answers. There should only be 2 or 4 answers in the API response. Number of answers were {}", allAnswers.size());
@@ -223,11 +221,14 @@ public class Trivia implements SlashCommand {
         return Mono.empty();
     }
 
-    private void startAnsweringTimer(ButtonInteractionEvent event, long timeReminder) {
+    private void startAnsweringTimer(ButtonInteractionEvent event, long timeReminder, int numOfCharsQuestionsAnswers) {
+
+        long totalReminderTime = timeReminder + ((numOfCharsQuestionsAnswers / 10) * 1000L);
+
         answerTimerThread = new Thread(() -> {
             while (!answerTimerThread.isInterrupted()) {
                 try {
-                    Thread.sleep(timeReminder);
+                    Thread.sleep(totalReminderTime);
                     event.createFollowup()
                         .withEphemeral(true)
                         .withContent(ANSWERING_TIME_REMINDER_TEXT)
@@ -278,6 +279,8 @@ public class Trivia implements SlashCommand {
 
         TriviaQuestionsEntity question = triviaQuestionsRepository.findById(questionId);
 
+        long totalTimeLimit = ANSWERING_TIME_LIMIT + (numOfCharsQuestionsAnswers / 10);
+
         if (triviaScoresRepository.findByUserIdAndQuestion(interactionUser, question) != null) {
             event.createFollowup()
                     .withEphemeral(true)
@@ -286,10 +289,10 @@ public class Trivia implements SlashCommand {
             return Mono.empty();
         }
 
-        else if (Duration.between(triviaButtonClicksRepository.findByUserIdAndQuestion(interactionUser, question).getDateTimeClicked(), LocalDateTime.now()).getSeconds() > ANSWERING_TIME_LIMIT) {
+        else if (Duration.between(triviaButtonClicksRepository.findByUserIdAndQuestion(interactionUser, question).getDateTimeClicked(), LocalDateTime.now()).getSeconds() > totalTimeLimit) {
             event.createFollowup()
                     .withEphemeral(true)
-                    .withContent("Dina 15 sekunder har gått så nu får du inte svara. Du får snabba på lite nästa gång")
+                    .withContent("Nu var du för långsam, din tid är slut. Du får snabba på lite nästa gång")
                     .subscribe();
             return Mono.empty();
         }
@@ -366,7 +369,42 @@ public class Trivia implements SlashCommand {
 
         LOG.debug("Everything is done and now we just return Mono.empty");
         return Mono.empty();
+    }
 
+    private void checkAndSaveQuestion(String source, LocalDate date, String url, String queryParams) {
+
+        TriviaResults question;
+
+        if (!source.equals("opentdb") && !source.equals("the-trivia-api")) {
+            LOG.error("Could not determine if we should use opentdb or the-trivia-api. Check property trivia.source");
+            return;
+        }
+        else if (triviaQuestionsRepository.findByQuestionDate(date) != null) {
+            LOG.debug("Question already in database for this date, no new question was fetched");
+            return;
+        }
+        else {
+            if (source.equals("opentdb")) {
+                OpenTriviaObject triviaObject = new OpenTriviaClient(url, queryParams).process();
+                question = triviaObject.getResults().get(0);
+            }
+            else {
+                question = new TheTriviaApiClient(url, queryParams).process();
+            }
+        }
+
+        boolean answerTooLong = question.getIncorrectAnswers().stream()
+                .anyMatch(answer -> answer.length() > 80);
+        answerTooLong = question.getCorrectAnswer().length() > 80 || answerTooLong;
+
+        if (answerTooLong) {
+            LOG.info("One of the answers were over 80 characters long. This is not allowed in button names in Discord. Getting new question and answers");
+            checkAndSaveQuestion(source, date, url, queryParams);
+        }
+        else {
+            saveQuestionToDb(question);
+            LOG.info("Todays question fetched from Trivia API and saved to DB");
+        }
     }
 
 
@@ -378,21 +416,21 @@ public class Trivia implements SlashCommand {
         String nowShowing = null;
 
         switch (period) {
-            case CURRENT_MONTH:
+            case CURRENT_MONTH -> {
                 fromDate = YearMonth.now().atDay(1);
                 toDate = YearMonth.now().atEndOfMonth();
                 nowShowing = "Innevarande månad";
-                break;
-            case PREVIOUS_MONTH:
+            }
+            case PREVIOUS_MONTH -> {
                 fromDate = YearMonth.now().minusMonths(1).atDay(1);
                 toDate = YearMonth.now().minusMonths(1).atEndOfMonth();
                 nowShowing = "Föregående månad";
-                break;
-            case ALL_TIME:
+            }
+            case ALL_TIME -> {
                 fromDate = LocalDate.of(2022, 1, 1);
                 toDate = LocalDate.now().plusDays(1);
                 nowShowing = "Forever";
-                break;
+            }
         }
 
         List<TriviaScoresCountPoints> triviaScoresCountPoints = triviaScoresRepository.countTotalIdsByAnswerAndDates(fromDate, toDate);
@@ -402,18 +440,11 @@ public class Trivia implements SlashCommand {
 
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < numberToShow ; i++){
-            switch(i) {
-                case 0:
-                    sb.append(":first_place:");
-                    break;
-                case 1:
-                    sb.append(":second_place:");
-                    break;
-                case 2:
-                    sb.append(":third_place:");
-                    break;
-                default:
-                    sb.append(i + 1);
+            switch (i) {
+                case 0 -> sb.append(":first_place:");
+                case 1 -> sb.append(":second_place:");
+                case 2 -> sb.append(":third_place:");
+                default -> sb.append(i + 1);
             }
             sb.append(". ");
             sb.append("<@");
@@ -438,32 +469,7 @@ public class Trivia implements SlashCommand {
     }
 
 
-    private void saveQuestionToDb(OpenTriviaResults question) {
-        String correctAnswer = HtmlUtils.htmlUnescape(question.getCorrectAnswer());
-        List<String> incorrectAnswers = question.getIncorrectAnswers();
-
-        TriviaQuestionsEntity entity = new TriviaQuestionsEntity();
-        entity.setQuestion(HtmlUtils.htmlUnescape(question.getQuestion()));
-        entity.setCorrectAnswer(correctAnswer);
-        entity.setCategory(question.getCategory());
-        entity.setDifficulty(question.getDifficulty());
-        entity.setType(question.getType());
-        entity.setQuestionDate(LocalDate.now());
-
-        if (question.getType().equals("multiple")) {
-            entity.setIncorrectAnswer1(incorrectAnswers.get(0));
-            entity.setIncorrectAnswer2(incorrectAnswers.get(1));
-            entity.setIncorrectAnswer3(incorrectAnswers.get(2));
-        }
-        else {
-            entity.setIncorrectAnswer1(incorrectAnswers.get(0));
-        }
-
-        triviaQuestionsRepository.save(entity);
-    }
-
-
-    private void saveTheTriviaApiQuestionToDb(TheTriviaApiResults question) {
+    private void saveQuestionToDb(TriviaResults question) {
         String correctAnswer = HtmlUtils.htmlUnescape(question.getCorrectAnswer());
         List<String> incorrectAnswers = question.getIncorrectAnswers();
 
@@ -493,8 +499,7 @@ public class Trivia implements SlashCommand {
         String percentageFormatted = String.format("%.1f", percentageForDate.getPercentCorrect());
 
         String text = percentageFormatted +
-                "% svarade rätt på gårdagens fråga: \n*" +
-                "*";
+                "% svarade rätt på gårdagens fråga";
 
         client.getChannelById(Snowflake.of(channelId))
                 .ofType(MessageChannel.class)

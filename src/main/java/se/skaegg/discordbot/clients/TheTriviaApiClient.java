@@ -40,8 +40,6 @@ public class TheTriviaApiClient {
         TheTriviaApiResults questions = new TheTriviaApiResults();
 
         try {
-//             jsonList = MAPPER.readValue(response, List.class);
-//             String jsonObj = jsonList.get(0);
             jsonList = MAPPER.readValue(response, new TypeReference<>() {
             });
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
