@@ -24,11 +24,11 @@ public interface TriviaScoresRepository extends JpaRepository<TriviaScoresEntity
     List<TriviaScoresCountPoints> countTotalIdsByAnswerAndDates(LocalDate fromDate, LocalDate toDate);
 
 
-    @Query("SELECT new se.skaegg.discordbot.jpa.TriviaPercentageForDateEntity(Q.questionDate, Q.question, (CAST(SUM(S.correctAnswer) AS float) / CAST(COUNT(*) AS float)) * 100.0)\n" +
-            "FROM TriviaScoresEntity S\n" +
-            "LEFT OUTER JOIN TriviaQuestionsEntity Q ON Q.id = S.question\n" +
-            "WHERE Q.questionDate = ?1\n" +
-            "GROUP BY Q.id")
+@Query("SELECT new se.skaegg.discordbot.jpa.TriviaPercentageForDateEntity(Q.questionDate, Q.question, ((CAST(SUM(S.correctAnswer) AS DOUBLE) / CAST(COUNT(*) AS float)) * 100.0)) " +
+        "FROM TriviaScoresEntity S " +
+        "LEFT OUTER JOIN TriviaQuestionsEntity Q ON Q.id = S.question " +
+        "WHERE Q.questionDate = ?1 " +
+        "GROUP BY Q.id")
     TriviaPercentageForDateEntity percentageCorrectByDate2(LocalDate date);
 
 
