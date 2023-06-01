@@ -226,6 +226,7 @@ public class Trivia implements SlashCommand {
         long totalReminderTime = timeReminder + ((numOfCharsQuestionsAnswers / 10) * 1000L);
 
         answerTimerThread = new Thread(() -> {
+            LOG.debug("new Thread started for answering timer. will wait for {} ms before sending the 5 second reminder", totalReminderTime);
             while (!answerTimerThread.isInterrupted()) {
                 try {
                     Thread.sleep(totalReminderTime);
@@ -247,7 +248,7 @@ public class Trivia implements SlashCommand {
 
     public void stopAnsweringTimer() {
         this.answerTimerThread.interrupt();
-        LOG.debug("Current number of threads in thread group when interrupting current Trivia thread: {}", Thread.activeCount());
+        LOG.debug("Answering timer thread stopped. Current number of threads in thread group when interrupting current Trivia thread: {}", Thread.activeCount());
     }
 
 
