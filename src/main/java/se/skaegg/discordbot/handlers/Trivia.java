@@ -174,15 +174,23 @@ public class Trivia implements SlashCommand {
 
         if (answersMap.size() == 4) {
             event.createFollowup()
-                    .withContent(questionsEntity.getQuestion())
+                    .withContent(String.format("""
+                                    **%s**
+                                    
+                                    :regional_indicator_a:  %s
+                                    :regional_indicator_b:  %s
+                                    :regional_indicator_c:  %s
+                                    :regional_indicator_d:  %s
+                                    """,
+                                questionsEntity.getQuestion(), allAnswers.get(0), allAnswers.get(1), allAnswers.get(2), allAnswers.get(3)))
                     .withEphemeral(true)
                     .withComponents(ActionRow.of(
-                            // The name of the button is fetched from the shuffled list and the customId is fetched from the corresponding value in the map
+                            // The name of the button is set to A,B,C or D and the customId is fetched from the corresponding value in the map
                             // So the correct answer will have "trivia_correct_answer" as customId
-                            Button.primary(answersMap.get(allAnswers.get(0)), allAnswers.get(0)),
-                            Button.primary(answersMap.get(allAnswers.get(1)), allAnswers.get(1)),
-                            Button.primary(answersMap.get(allAnswers.get(2)), allAnswers.get(2)),
-                            Button.primary(answersMap.get(allAnswers.get(3)), allAnswers.get(3))
+                            Button.primary(answersMap.get(allAnswers.get(0)), "A"),
+                            Button.primary(answersMap.get(allAnswers.get(1)), "B"),
+                            Button.primary(answersMap.get(allAnswers.get(2)), "C"),
+                            Button.primary(answersMap.get(allAnswers.get(3)), "D")
                             )
                     )
                     .retry(3)
@@ -193,11 +201,17 @@ public class Trivia implements SlashCommand {
         }
         else if (allAnswers.size() == 2) {
             event.createFollowup()
-                    .withContent(questionsEntity.getQuestion())
+                    .withContent(String.format("""
+                                    **%s**
+                                    
+                                    :regional_indicator_a:  %s
+                                    :regional_indicator_b:  %s
+                                    """,
+                                questionsEntity.getQuestion(), allAnswers.get(0), allAnswers.get(1)))
                     .withEphemeral(true)
                     .withComponents(ActionRow.of(
-                            Button.primary(answersMap.get(allAnswers.get(0)), allAnswers.get(0)),
-                            Button.primary(answersMap.get(allAnswers.get(1)), allAnswers.get(1))
+                            Button.primary(answersMap.get(allAnswers.get(0)), "A"),
+                            Button.primary(answersMap.get(allAnswers.get(1)), "A")
                             )
                     )
                     .retry(3)
@@ -353,7 +367,7 @@ public class Trivia implements SlashCommand {
             scoresEntity.setCorrectAnswer(false);
             event.createFollowup()
                     .withEphemeral(true)
-                    .withContent("Rätt svar var: " + correctAnswerLabel)
+                    .withContent(String.format("Rätt svar var: %s  %s", correctAnswerLabel,question.getCorrectAnswer()))
                     .retry(3)
                     .subscribe();
             LOG.debug("The followup has been created for the correct answer");
@@ -380,32 +394,21 @@ public class Trivia implements SlashCommand {
             LOG.error("Could not determine if we should use opentdb or the-trivia-api. Check property trivia.source");
             return;
         }
-        else if (triviaQuestionsRepository.findByQuestionDate(date) != null) {
+        if (triviaQuestionsRepository.findByQuestionDate(date) != null) {
             LOG.debug("Question already in database for this date, no new question was fetched");
             return;
         }
-        else {
-            if (source.equals("opentdb")) {
-                OpenTriviaObject triviaObject = new OpenTriviaClient(url, queryParams).process();
-                question = triviaObject.getResults().get(0);
-            }
-            else {
-                question = new TheTriviaApiClient(url, queryParams).process();
-            }
-        }
 
-        boolean answerTooLong = question.getIncorrectAnswers().stream()
-                .anyMatch(answer -> answer.length() > 80);
-        answerTooLong = question.getCorrectAnswer().length() > 80 || answerTooLong;
-
-        if (answerTooLong) {
-            LOG.info("One of the answers were over 80 characters long. This is not allowed in button names in Discord. Getting new question and answers");
-            checkAndSaveQuestion(source, date, url, queryParams);
+        if (source.equals("opentdb")) {
+            OpenTriviaObject triviaObject = new OpenTriviaClient(url, queryParams).process();
+            question = triviaObject.getResults().get(0);
         }
         else {
-            saveQuestionToDb(question);
-            LOG.info("Todays question fetched from Trivia API and saved to DB");
+            question = new TheTriviaApiClient(url, queryParams).process();
         }
+
+        saveQuestionToDb(question);
+        LOG.info("Todays question fetched from Trivia API and saved to DB");
     }
 
 
