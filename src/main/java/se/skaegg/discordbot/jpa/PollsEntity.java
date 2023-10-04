@@ -29,6 +29,9 @@ public class PollsEntity {
     @Column(name = "origin_channel_id")
     String channelId;
 
+    @Column(name = "processed")
+    Boolean processed;
+
 
     public Integer getId() {
         return id;
@@ -76,5 +79,17 @@ public class PollsEntity {
 
     public void setChannelId(String channelId) {
         this.channelId = channelId;
+    }
+
+    public Boolean getProcessed() {
+        return processed;
+    }
+
+    public void setProcessed(Boolean processed) {
+        this.processed = processed;
+    }
+
+    public boolean isPassedOrToday() {
+        return endDate.isBefore(LocalDate.now()) || endDate.isEqual(LocalDate.now());
     }
 }

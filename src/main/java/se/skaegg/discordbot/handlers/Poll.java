@@ -11,8 +11,7 @@ import discord4j.core.object.component.SelectMenu;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.EmbedCreateSpec;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import discord4j.rest.util.Color;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import se.skaegg.discordbot.clients.QuickChartClient;
@@ -27,7 +26,6 @@ import java.util.regex.Pattern;
 @Component
 public class Poll extends AbstractMessageHandler implements SlashCommand {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Poll.class);
     PollsRepository pollsRepository;
     PollAlternativesRepository pollAlternativesRepository;
     PollVotesRepository pollVotesRepository;
@@ -52,8 +50,7 @@ public class Poll extends AbstractMessageHandler implements SlashCommand {
         switch (subCommandName) {
             case "skapa" -> { return createPoll(event, subCommandOptions); }
             case "visa" -> { return presentListOfPolls(event, subCommandOptions); }
-            case "ta_bort" -> {
-
+            case "ta_bort" -> { //TODO: Maybe add this?
             }
             default -> {
                 return Mono.empty();
@@ -80,6 +77,7 @@ public class Poll extends AbstractMessageHandler implements SlashCommand {
         pollsEntity.setUserId(event.getInteraction().getUser().getId().asString());
         Snowflake originChannel = Objects.requireNonNull(event.getInteraction().getChannel().doOnSuccess(MessageChannel::getId).block()).getId();
         pollsEntity.setChannelId(originChannel.asString());
+        pollsEntity.setProcessed(false);
         pollsRepository.save(pollsEntity);
 
         answers.forEach(answer -> {
@@ -99,12 +97,13 @@ public class Poll extends AbstractMessageHandler implements SlashCommand {
         @SuppressWarnings("OptionalGetWithoutIsPresent")
         String searchPhrase = options.get(0).getValue().get().getRaw();
 
-        List<PollsEntity> searchResults = pollsRepository.findByNameContaining(searchPhrase);
+        List<PollsEntity> searchResults = pollsRepository.findByNameContainingAndProcessed(searchPhrase, false);
+        if (searchResults.isEmpty()) {
+            return event.editReply("Ingen omröstning med din söksträng i namnet hittades")
+                   .then();
+        }
 
         List<SelectMenu.Option> pollsList = new ArrayList<>();
-        if (searchResults.isEmpty()) {
-            return Mono.empty();
-        }
         searchResults.forEach(sr -> pollsList.add(SelectMenu.Option.of(sr.getName(), sr.getId().toString())));
 
         return event.editReply()
@@ -112,13 +111,9 @@ public class Poll extends AbstractMessageHandler implements SlashCommand {
     }
 
     public Mono<Message> showPoll(SelectMenuInteractionEvent event) {
-        String pollId = event.getValues().get(0);
-        PollsEntity poll = pollsRepository.findById(Integer.parseInt(pollId));
+        int pollId = Integer.parseInt(event.getValues().get(0));
+        PollsEntity poll = pollsRepository.findById(pollId);
 
-        if (poll == null) {
-            event.reply("Hittade ingen omröstning med det namnet").subscribe();
-            return Mono.empty();
-        }
         List<PollAlternativesEntity> pollAlternatives = pollAlternativesRepository.findByPollId(poll);
 
         List<Button> alternativeButtons = new ArrayList<>();
@@ -126,20 +121,13 @@ public class Poll extends AbstractMessageHandler implements SlashCommand {
             Button b = Button.primary("poll_" + poll.getId() + "_" + pa.getId().toString(), pa.getValue());
             alternativeButtons.add(b);
         });
+        List<ActionRow> alternativeActionRows = new ArrayList<>();
+        fillActionRowList(alternativeButtons.iterator(), alternativeActionRows);
 
-        List<PollVotesPerPollId> votes = pollVotesRepository.countVotesPerPollId(poll);
-        Map<String, Long> votesMap = new HashMap<>();
-        for (PollVotesPerPollId vote : votes) {
-            votesMap.put(vote.getAlternativeName(), vote.getVoteCount());
-        }
+        EmbedCreateSpec chartEmbed = createPollChartEmbedSpec(poll, poll.getName());
 
-        QuickChartClient qcClient = new QuickChartClient();
-        EmbedCreateSpec chartEmbed = EmbedCreateSpec.builder()
-                .image(qcClient.createPollChart(poll.getName(), votesMap))
-                .build();
-
-        event.reply().withContent(poll.getName())
-                .withComponents(ActionRow.of(alternativeButtons))
+        event.reply()
+                .withComponents(List.copyOf(alternativeActionRows)) // This doesn't work without List.copyOf which makes the list immutable
                 .withEmbeds(chartEmbed)
                 .retry(3)
                 .subscribe();
@@ -152,6 +140,41 @@ public class Poll extends AbstractMessageHandler implements SlashCommand {
                         .disabled()))
                 .subscribe();
         return Mono.empty();
+    }
+
+    /**
+     * Only 5 buttons are allowed in 1 ActionRow.
+     * This method starts an action row and fills it with 5 buttons.
+     * If there are more than 5 buttons it will create a new {@link discord4j.core.object.component.ActionRow ActionRow}
+     *
+     * @param buttonListIterator Iterator of all buttons that should be in the ActionRows
+     * @param actionRowListToFill Empty List of ActionRow to fill
+     */
+    private void fillActionRowList(Iterator<Button> buttonListIterator, List<ActionRow> actionRowListToFill) {
+        int counter = 0;
+        List<Button> buttons = new ArrayList<>();
+        while (buttonListIterator.hasNext() && counter <= 4) {
+            buttons.add(buttonListIterator.next());
+            counter++;
+        }
+        actionRowListToFill.add(ActionRow.of(buttons));
+        if (buttonListIterator.hasNext()) {
+            fillActionRowList(buttonListIterator, actionRowListToFill);
+        }
+    }
+
+    public EmbedCreateSpec createPollChartEmbedSpec(PollsEntity poll, String title) {
+        List<PollVotesPerPollId> votes = pollVotesRepository.countVotesPerPollId(poll);
+        Map<String, Long> votesMap = new LinkedHashMap<>(); // Using LinkedHashMap here to make the alternatives come in the same order they were added
+        votes.forEach(vote -> votesMap.put(vote.getAlternativeName(), vote.getVoteCount()));
+
+        QuickChartClient qcClient = new QuickChartClient();
+
+        return EmbedCreateSpec.builder()
+                .title(title)
+                .color(Color.of(90, 130, 180))
+                .image(qcClient.createPollChart(poll.getName(), votesMap))
+                .build();
     }
 
     public void addVote(ButtonInteractionEvent event) {

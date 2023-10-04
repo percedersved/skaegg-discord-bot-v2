@@ -45,24 +45,33 @@ public class QuickChartClient {
                         datasets: [
                             {
                                 label: '',
-                                backgroundColor: 'rgb(90, 130, 180, 0.5)',
-                                borderColor: 'rgb(255, 255, 255)',
+                                backgroundColor: 'rgba(90, 130, 180, 0.5)',
+                                borderColor: 'rgb(90,130,180)',
+                                borderRadius: 10,
                                 data: [%s]
                             }
                         ]
                     },
                     options: {
-                        title: {
-                            display: true,
-                            text: '%s'
+                        responsive: true,
+                        indexAxis: 'x',
+                        elements: {
+                            bar: {
+                                borderWidth: 2,
+                            }
                         },
                         plugins: {
+                            legend: false,
+                            title: {
+                                display: true,
+                                text: '%s'
+                            },
                             datalabels: {
                                 anchor: 'center',
                                 align: 'center',
-                                color: '#000',
+                                color: 'rgb(128,128,128)',
                                 font: {
-                                  weight: 'normal'
+                                  weight: 'bold'
                                 }
                             }
                         }

@@ -9,5 +9,6 @@ import java.util.List;
 public interface PollsRepository extends JpaRepository<PollsEntity, Integer> {
 
     PollsEntity findById(int id);
-    List<PollsEntity> findByNameContaining(String name);
+    List<PollsEntity> findByNameContainingAndProcessed(String name, Boolean processed);
+    List<PollsEntity> findByProcessed(Boolean processed);
 }
