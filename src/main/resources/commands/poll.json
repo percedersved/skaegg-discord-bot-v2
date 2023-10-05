@@ -38,7 +38,7 @@
           "name": "namn",
           "description": "Namn/Del av namn att söka efter",
           "type": 3,
-          "required": true
+          "required": false
         }
       ]
     }

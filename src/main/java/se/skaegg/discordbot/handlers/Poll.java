@@ -20,6 +20,7 @@ import se.skaegg.discordbot.jpa.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -94,17 +95,26 @@ public class Poll extends AbstractMessageHandler implements SlashCommand {
     private Mono<Void> presentListOfPolls(ChatInputInteractionEvent event, List<ApplicationCommandInteractionOption> options) {
         deferEventReply(event, false);
 
-        @SuppressWarnings("OptionalGetWithoutIsPresent")
-        String searchPhrase = options.get(0).getValue().get().getRaw();
+        AtomicReference<String> searchPhrase = new AtomicReference<>();
+        List<PollsEntity> dbResults;
+        // It's optional to send a search phrase when using this command.
+        // Check if there is any search phrase option sent and use it
+        // if it is and otherwise return all rows that are now processed from the db
+        if (!options.isEmpty()) {
+            options.get(0).getValue().ifPresent(o -> searchPhrase.set(o.getRaw()));
+            dbResults = pollsRepository.findByNameContainingAndProcessed(searchPhrase.get(), false);
+        }
+        else {
+            dbResults = pollsRepository.findByProcessed(false);
+        }
 
-        List<PollsEntity> searchResults = pollsRepository.findByNameContainingAndProcessed(searchPhrase, false);
-        if (searchResults.isEmpty()) {
+        if (dbResults.isEmpty()) {
             return event.editReply("Ingen omröstning med din söksträng i namnet hittades")
                    .then();
         }
 
         List<SelectMenu.Option> pollsList = new ArrayList<>();
-        searchResults.forEach(sr -> pollsList.add(SelectMenu.Option.of(sr.getName(), sr.getId().toString())));
+        dbResults.forEach(sr -> pollsList.add(SelectMenu.Option.of(sr.getName(), sr.getId().toString())));
 
         return event.editReply()
                 .withComponents(ActionRow.of(SelectMenu.of("polls", pollsList))).then();
@@ -118,7 +128,7 @@ public class Poll extends AbstractMessageHandler implements SlashCommand {
 
         List<Button> alternativeButtons = new ArrayList<>();
         pollAlternatives.forEach(pa -> {
-            Button b = Button.primary("poll_" + poll.getId() + "_" + pa.getId().toString(), pa.getValue());
+            Button b = Button.success("poll_" + poll.getId() + "_" + pa.getId().toString(), pa.getValue());
             alternativeButtons.add(b);
         });
         List<ActionRow> alternativeActionRows = new ArrayList<>();
@@ -132,13 +142,13 @@ public class Poll extends AbstractMessageHandler implements SlashCommand {
                 .retry(3)
                 .subscribe();
 
+        // Disable the SelectMenu after the user has chosen a poll from it
         event.getInteraction()
                 .getMessage()
-                .get()
-                .edit()
+                .ifPresent(m -> m.edit()
                 .withComponents(ActionRow.of(SelectMenu.of("disabled", SelectMenu.Option.ofDefault(poll.getName(), "disabled"))
                         .disabled()))
-                .subscribe();
+                .subscribe());
         return Mono.empty();
     }
 

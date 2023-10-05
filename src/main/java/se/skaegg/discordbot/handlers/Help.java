@@ -17,25 +17,28 @@ public class Help implements SlashCommand{
     @Override
     public Mono<Void> handle(ChatInputInteractionEvent event) {
 
-        String helpText = "" +
-                "`/ping` - Kolla om jag lever\n" +
-                "`/bolagetöppet` - Öppettider för Bolaget i Norrtälje\n" +
-                "`/codenames` - Skapar en länk för Codenames på horsepaste.com\n" +
-                "`/lag [Namn kommaseparerat]` - Slumpar fram 2 lag utifrån namnen som angivits\n" +
-                "`/lagvoice` - Tar alla namn som är i någon voicekanal och slumpar 2 lag\n" +
-                "`/fredag` - Är det fredag?\n" +
-                "`/film [Film- eller seriennamn på orginalspråk]` - Visa information om film/serie från OMDB api\n" +
-                "`/nedräkning visa [Namn på nedräkning]` - Visar hur lång tid det är kvar till datumet på nedräkningen\n" +
-                "`/nedräkning ny [Namn på nedräkning, datum i format yyyy-MM-dd HH:mm]` - Lägger till nedräkning\n" +
-                "`/nedräkning lista` - Listar nedräkningar med namn och ID\n" +
-                "`/nedräkning tabort [ID]` - Tar bort nedräkning\n" +
-                "`/restaurang` - Tips på restaurang. Default är i Norrtälje. Möjligt att lägga till annan stad eller plats som parameter\n" +
-                "`/restaurangduell` - Rösta på 2 olika slumpmässiga restauranger. Default är i Norrtälje. Möjligt att lägga till annan stad eller plats som parameter\n" +
-                "`/statistik` - Visar statistik för kommandon och vilka användare som använt boten mest\n" +
-                "`/trivia dagens` - Ger dagens fråga\n" +
-                "`/trivia ställning_innevarande` - Visar Trivia-ställningen för innevarande månad\n" +
-                "`/trivia ställning_föregående` - Visar Trivia-ställningen för föregående månad\n" +
-                "`/trivia ställning_alltime` - Visar Trivia-ställningen för all tid";
+        String helpText = """                
+                `/ping` - Kolla om jag lever
+                `/bolagetöppet` - Öppettider för Bolaget i Norrtälje
+                `/codenames` - Skapar en länk för Codenames på horsepaste.com
+                `/lag [Namn kommaseparerat]` - Slumpar fram 2 lag utifrån namnen som angivits
+                `/lagvoice` - Tar alla namn som är i någon voicekanal och slumpar 2 lag
+                `/fredag` - Är det fredag?\
+                `/film [Film- eller seriennamn på orginalspråk]` - Visa information om film/serie från OMDB api
+                `/nedräkning visa [Namn på nedräkning]` - Visar hur lång tid det är kvar till datumet på nedräkningen
+                `/nedräkning ny [Namn på nedräkning, datum i format yyyy-MM-dd HH:mm]` - Lägger till nedräkning
+                `/nedräkning lista` - Listar nedräkningar med namn och ID
+                `/nedräkning tabort [ID]` - Tar bort nedräkning
+                `/restaurang` - Tips på restaurang. Default är i Norrtälje. Möjligt att lägga till annan stad eller plats som parameter
+                `/restaurangduell` - Rösta på 2 olika slumpmässiga restauranger. Default är i Norrtälje. Möjligt att lägga till annan stad eller plats som parameter
+                `/statistik` - Visar statistik för kommandon och vilka användare som använt boten mest
+                `/trivia dagens` - Ger dagens fråga
+                `/trivia ställning_innevarande` - Visar Trivia-ställningen för innevarande månad
+                `/trivia ställning_föregående` - Visar Trivia-ställningen för föregående månad
+                `/trivia ställning_alltime` - Visar Trivia-ställningen för all tid
+                `/omröstning skapa` - Skapa en omröstning
+                `/omröstning visa` - Sök och visa en omröstning
+                """;
 
         EmbedCreateSpec embed = EmbedCreateSpec.builder()
                 .color(Color.of(90, 130, 180))
