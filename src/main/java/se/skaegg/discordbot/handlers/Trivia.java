@@ -149,7 +149,7 @@ public class Trivia implements SlashCommand {
         if (triviaButtonClicksRepository.findByUserIdAndQuestion(interactionUser, questionsEntity) != null) {
             event.createFollowup()
                     .withEphemeral(true)
-                    .withContent("Du har redan hämtat dagens fråga")
+                    .withContent("Du har redan hämtat dagens fråga. No answering for you! Dagens fråga var: **" + questionsEntity.getQuestion() + "**")
                     .subscribe();
             return Mono.empty();
         }
