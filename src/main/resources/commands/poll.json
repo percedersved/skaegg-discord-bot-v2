@@ -1,0 +1,46 @@
+{
+  "type": 1,
+  "name": "omröstning",
+  "description": "Omröstning",
+  "autocomplete": true,
+  "options": [
+    {
+      "name": "skapa",
+      "description": "Skapa en ny omröstning",
+      "type": 1,
+      "options": [
+        {
+          "name": "namn",
+          "description": "Beskrivning/Fråga",
+          "type": 3,
+          "required": true
+        },
+        {
+          "name": "slutdatum",
+          "description": "Datum när omröstningen slutar i formatet \"yyyy-MM-dd\"",
+          "type": 3,
+          "required": true
+        },
+        {
+          "name": "alternativ",
+          "description": "Alternativ som kommaseparerad lista",
+          "type": 3,
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "visa",
+      "description": "Visa en befintlig omröstning",
+      "type": 1,
+      "options": [
+        {
+          "name": "namn",
+          "description": "Namn/Del av namn att söka efter",
+          "type": 3,
+          "required": false
+        }
+      ]
+    }
+  ]
+}

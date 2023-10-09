@@ -8,7 +8,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import se.skaegg.discordbot.handlers.MovieSearch;
+import se.skaegg.discordbot.handlers.Poll;
 import se.skaegg.discordbot.handlers.Timer;
+import se.skaegg.discordbot.jpa.PollAlternativesRepository;
+import se.skaegg.discordbot.jpa.PollVotesRepository;
+import se.skaegg.discordbot.jpa.PollsRepository;
 import se.skaegg.discordbot.jpa.TimerRepository;
 
 @Component
@@ -19,6 +23,12 @@ public class SelectMenuListener {
 
     @Autowired
     TimerRepository timerRepository;
+    @Autowired
+    PollsRepository pollsRepository;
+    @Autowired
+    PollAlternativesRepository pollAlternativesRepository;
+    @Autowired
+    PollVotesRepository pollVotesRepository;
 
 
     public SelectMenuListener(GatewayDiscordClient client) {
@@ -36,6 +46,9 @@ public class SelectMenuListener {
         }
         else if (event.getCustomId().equals("timers")) {
             return new Timer(timerRepository).showTimer(event);
+        }
+        else if (event.getCustomId().equals("polls")) {
+            return new Poll(pollsRepository, pollAlternativesRepository, pollVotesRepository).showPoll(event);
         }
         else {
             return Mono.empty();

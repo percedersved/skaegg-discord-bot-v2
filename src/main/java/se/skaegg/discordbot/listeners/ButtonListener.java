@@ -6,10 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+import se.skaegg.discordbot.handlers.Poll;
 import se.skaegg.discordbot.handlers.Trivia;
-import se.skaegg.discordbot.jpa.TriviaButtonClicksRepository;
-import se.skaegg.discordbot.jpa.TriviaQuestionsRepository;
-import se.skaegg.discordbot.jpa.TriviaScoresRepository;
+import se.skaegg.discordbot.jpa.*;
 
 import java.time.LocalDate;
 import java.util.regex.Matcher;
@@ -24,6 +23,12 @@ public class ButtonListener {
     TriviaScoresRepository triviaScoresRepository;
     @Autowired
     TriviaButtonClicksRepository triviaButtonClicksRepository;
+    @Autowired
+    PollsRepository pollsRepository;
+    @Autowired
+    PollAlternativesRepository pollAlternativesRepository;
+    @Autowired
+    PollVotesRepository pollVotesRepository;
     @Autowired
     GatewayDiscordClient client;
 
@@ -41,10 +46,10 @@ public class ButtonListener {
     private Mono<Void> handle(ButtonInteractionEvent event) {
 
         String buttonId = event.getCustomId();
+        Pattern p = Pattern.compile("(.*)_(.*)");
 
         if (buttonId.startsWith("getQuestion_")){
             String date;
-            Pattern p = Pattern.compile("(.*)_(.*)");
             Matcher m = p.matcher(buttonId);
             if (m.find()) {
                 date = m.group(2);
@@ -54,6 +59,13 @@ public class ButtonListener {
                         triviaButtonClicksRepository,
                         client)
                         .createQuestions(url, queryParams, source, localDate, event);
+            }
+        }
+        else if (buttonId.startsWith("poll_")) {
+            Matcher m = p.matcher(buttonId);
+            if (m.find()) {
+                new Poll(pollsRepository, pollAlternativesRepository, pollVotesRepository)
+                        .addVote(event);
             }
         }
         return Mono.empty();

@@ -35,7 +35,6 @@ public class CheckTimersConfiguration {
         List<TimerEntity> timers = timerRepository.findByProcessed(false);
 
         timers.stream()
-//                .filter(timer -> timer.getProcessed().equals(Boolean.FALSE))
                 .filter(timer -> timer.getTimeDateTime().isBefore(LocalDateTime.now()))
                 .forEach(timer -> {
                     client.getChannelById(Snowflake.of(timer.getChannelId()))
