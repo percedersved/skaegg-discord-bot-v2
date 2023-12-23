@@ -5,6 +5,7 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
+import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.channel.MessageChannel;
@@ -27,10 +28,7 @@ import se.skaegg.discordbot.dto.TriviaResults;
 import se.skaegg.discordbot.jpa.*;
 import se.skaegg.discordbot.listeners.TriviaTempListener;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.YearMonth;
+import java.time.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -83,14 +81,13 @@ public class Trivia implements SlashCommand {
                 String manualChannelId = event.getInteraction().getChannelId().asString();
                 return createGetQuestionButton(manualChannelId);
             }
-            case "ställning_innevarande" -> {
-                return showStandings(event, scoresPeriod.CURRENT_MONTH);
-            }
-            case "ställning_föregående" -> {
-                return showStandings(event, scoresPeriod.PREVIOUS_MONTH);
-            }
-            case "ställning_alltime" -> {
-                return showStandings(event, scoresPeriod.ALL_TIME);
+            case "ställning" -> {
+                String period = subCommand.getOptions()
+                        .get(0)
+                        .getValue()
+                        .map(ApplicationCommandInteractionOptionValue::asString)
+                        .orElseThrow();
+                return showStandings(event, scoresPeriod.valueOf(period));
             }
             case "andel_svar_månad" -> {
                 List<ApplicationCommandInteractionOption> subCommandOptions = subCommand.getOptions();
@@ -426,14 +423,24 @@ public class Trivia implements SlashCommand {
                 nowShowing = "Innevarande månad";
             }
             case PREVIOUS_MONTH -> {
-                fromDate = YearMonth.now().minusMonths(1).atDay(1);
-                toDate = YearMonth.now().minusMonths(1).atEndOfMonth();
+                fromDate = YearMonth.now().minusMonths(1L).atDay(1);
+                toDate = YearMonth.now().minusMonths(1L).atEndOfMonth();
                 nowShowing = "Föregående månad";
             }
             case ALL_TIME -> {
                 fromDate = LocalDate.of(2022, 1, 1);
                 toDate = LocalDate.now().plusDays(1);
                 nowShowing = "Forever";
+            }
+            case CURRENT_YEAR -> {
+                fromDate = Year.now().atDay(1);
+                toDate = Year.now().atMonth(12).atEndOfMonth();
+                nowShowing = "Innevarande år";
+            }
+            case PREVIOUS_YEAR -> {
+                fromDate = Year.now().minusYears(1L).atDay(1);
+                toDate = Year.now().minusYears(1L).atMonth(12).atEndOfMonth();
+                nowShowing = "Föregående år";
             }
         }
 
@@ -561,6 +568,8 @@ public class Trivia implements SlashCommand {
     enum scoresPeriod {
         CURRENT_MONTH,
         PREVIOUS_MONTH,
+        CURRENT_YEAR,
+        PREVIOUS_YEAR,
         ALL_TIME
     }
 }
