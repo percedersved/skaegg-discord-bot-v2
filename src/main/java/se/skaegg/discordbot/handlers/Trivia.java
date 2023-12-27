@@ -50,6 +50,7 @@ public class Trivia implements SlashCommand {
     private static final int ANSWERING_TIME_LIMIT = 13; // Seconds
     private static final Long ANSWERING_TIME_REMINDER = 5000L; // Milliseconds
     private static final String ANSWERING_TIME_REMINDER_TEXT = "Du har endast 5 sekunder kvar, synda synda!";
+    private static final int NO_RETRIES_FETCH_UNIQUE_QUESTION = 5;
 
     @Value("${trivia.results.maxresults}")
     Integer maxResults;
@@ -134,7 +135,7 @@ public class Trivia implements SlashCommand {
                 }).subscribe();
 
         // Get question from API, check that no answers are over 80 characters and save to DB
-        checkAndSaveQuestion(source, date, url, queryParams);
+        checkAndSaveQuestion(source, date, url, queryParams, NO_RETRIES_FETCH_UNIQUE_QUESTION);
 
         TriviaQuestionsEntity questionsEntity = triviaQuestionsRepository.findByQuestionDate(date);
         int questionId = questionsEntity.getId();
@@ -383,7 +384,12 @@ public class Trivia implements SlashCommand {
         return Mono.empty();
     }
 
-    private void checkAndSaveQuestion(String source, LocalDate date, String url, String queryParams) {
+    private void checkAndSaveQuestion(String source, LocalDate date, String url, String queryParams, int counter) {
+
+        if (counter <= 1) {
+            LOG.error("Tried to fetch new questions 5 times but only got duplicates. Can't get new question from API");
+            return;
+        }
 
         TriviaResults question;
 
@@ -402,6 +408,14 @@ public class Trivia implements SlashCommand {
         }
         else {
             question = new TheTriviaApiClient(url, queryParams).process();
+        }
+
+        // Check if we already have this question. If we do call this method recursively
+        // and subtract the counter to make sure this doesn't run forever
+        if (!triviaQuestionsRepository.findByQuestion(question.getQuestion()).isEmpty()) {
+            LOG.info(String.format("Trivia question already in database. Trying to fetch new question. Attempt no: %s",
+                    NO_RETRIES_FETCH_UNIQUE_QUESTION - (counter - 1)));
+            checkAndSaveQuestion(source, date, url, queryParams, --counter);
         }
 
         saveQuestionToDb(question);
