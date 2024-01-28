@@ -1,0 +1,13 @@
+{
+  "type": 1,
+  "name": "emojistats",
+  "description": "Emoji statistik",
+  "autocomplete": true,
+  "options": [
+      {
+        "name": "topplista",
+        "description": "Visa lista över mest använda custom emojis",
+        "type": 1
+      }
+    ]
+}
