@@ -23,4 +23,18 @@ public interface EmojiStatsRepository extends JpaRepository<EmojiStatsEntity, In
     @Query("SELECT new se.skaegg.discordbot.jpa.EmojiStatsCountPerDay(e.date, e.name, e.useType, COUNT(*)) "
             + "FROM EmojiStatsEntity AS e GROUP BY e.date, e.name, e.useType ORDER BY e.date")
     List<EmojiStatsCountPerDay> countTotalPerDay();
+
+
+    @Query("SELECT NEW se.skaegg.discordbot.jpa.EmojiStatsCountPerDay2(" +
+                  "e.date, " +
+                  "e.name, " +
+                  "SUM(CASE WHEN e.useType = 'MESSAGE' THEN 1 ELSE 0 END) as msgCount, " +
+                  "SUM(CASE WHEN e.useType = 'REACTION' THEN 1 ELSE 0 END) as reactCount" +
+                  ") " +
+                  "FROM EmojiStatsEntity e " +
+                  "GROUP BY e.date, e.name " +
+                  "HAVING " +
+                  "SUM(CASE WHEN e.useType = 'MESSAGE' THEN 1 ELSE 0 END) > 0 OR " +
+                  "SUM(CASE WHEN e.useType = 'REACTION' THEN 1 ELSE 0 END) > 0")
+    public List<EmojiStatsCountPerDay2> countTotalPerDay2();
 }

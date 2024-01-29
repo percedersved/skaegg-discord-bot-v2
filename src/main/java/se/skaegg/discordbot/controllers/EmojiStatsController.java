@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import se.skaegg.discordbot.jpa.EmojiStatsCount;
 import se.skaegg.discordbot.jpa.EmojiStatsCountPerDay;
+import se.skaegg.discordbot.jpa.EmojiStatsCountPerDay2;
 import se.skaegg.discordbot.jpa.EmojiStatsEntity;
 import se.skaegg.discordbot.jpa.EmojiStatsRepository;
 
@@ -41,14 +42,14 @@ public class EmojiStatsController {
 	}
 
 	@GetMapping(path = "/emojistatsday", produces = "application/json")
-	public List<EmojiStatsCountPerDay> getAllEmojisPerDay(
+	public List<EmojiStatsCountPerDay2> getAllEmojisPerDay(
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
 //		if (from != null && to != null) {
 //			return emojiStatsRepository.countTotalPerDayDateFilter(from, to);
 //		}
 
-		return emojiStatsRepository.countTotalPerDay();
+		return emojiStatsRepository.countTotalPerDay2();
 	}
 
 }
