@@ -1,54 +1,35 @@
 package se.skaegg.discordbot.jpa;
 
-import se.skaegg.discordbot.handlers.EmojiStats;
-
 import java.time.LocalDate;
 import java.util.List;
 
 public class EmojiStatsCountPerDay {
-    LocalDate date;
-    String name;
-    EmojiStats.emojiUseType useType;
-    Long count;
+	private LocalDate date;
+	private List<Usage> usage;
 
-    public EmojiStatsCountPerDay(LocalDate date, String name, EmojiStats.emojiUseType useType, Long count) {
-        this.date = date;
-        this.name = name;
-        this.useType = useType;
-        this.count = count;
-    }
+	public EmojiStatsCountPerDay(LocalDate date, List<Usage> usage) {
+		this.date = date;
+		this.usage = usage;
+	}
 
-    public LocalDate getDate() {
-        return date;
-    }
+	public LocalDate getDate() {
+		return date;
+	}
 
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
+	public void setDate(LocalDate date) {
+		this.date = date;
+	}
 
-    public String getName() {
-        return name;
-    }
+	public List<Usage> getUsage() {
+		return usage;
+	}
 
-    public void setName(String name) {
-        this.name = name;
-    }
+	public void setUsage(List<Usage> usage) {
+		this.usage = usage;
+	}
 
-    public EmojiStats.emojiUseType getUseType() {
-        return useType;
-    }
+	public record Usage(String name, long msgCount, long reactCount) {
 
-    public void setUseType(EmojiStats.emojiUseType useType) {
-        this.useType = useType;
-    }
 
-    public Long getCount() {
-        return count;
-    }
-
-    public void setCount(Long count) {
-        this.count = count;
-    }
-
-    public record EmojiEntry(long msgCount, long reactCount){};
+	}
 }
