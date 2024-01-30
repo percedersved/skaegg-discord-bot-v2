@@ -46,8 +46,8 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests((authz) -> {
                     try {
                         authz
-                                .requestMatchers(HttpMethod.GET).permitAll()
-                                .anyRequest().hasRole("admin")
+//                                .requestMatchers(HttpMethod.GET).permitAll()
+                                .anyRequest().hasRole("ADMIN")
                                 .and()
                                 .httpBasic();
                     } catch (Exception e) {
