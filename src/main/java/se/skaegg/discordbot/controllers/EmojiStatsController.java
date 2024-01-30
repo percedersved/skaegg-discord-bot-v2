@@ -49,7 +49,7 @@ public class EmojiStatsController {
 	public List<EmojiStatsCountPerDay> getAllEmojisPerDay(
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-			@RequestParam(required = false, defaultValue = "1") int count, // This is number of days to get
+			@RequestParam(required = false, defaultValue = "30") int count, // This is number of days to get
 			@RequestParam(required = false, defaultValue = "0") int offset) {
 
 		return getCachedEmojisPerDay(from, to, count, offset);
@@ -57,9 +57,9 @@ public class EmojiStatsController {
 
 	private List<EmojiStatsCountPerDay> getCachedEmojisPerDay(LocalDate from, LocalDate to, int count, int offset) {
 
-		// If the cache is valid, return the cached data
+		// If the cache is valid, return the cached data (cache is valid for 15 minutes)
 		if (cachedEmojiStatsPerDay != null && lastEmojiStatsPerDayCacheTime != null &&
-				lastEmojiStatsPerDayCacheTime.plusSeconds(360).isAfter(Instant.now())) {
+				lastEmojiStatsPerDayCacheTime.plusSeconds(900).isAfter(Instant.now())) {
 			return cachedEmojiStatsPerDay.subList(offset, Math.min(offset + count, cachedEmojiStatsPerDay.size()));
 		}
 
