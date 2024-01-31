@@ -34,13 +34,14 @@ public class EmojiStats implements SlashCommand {
         return showCountPerEmoji(event);
     }
 
-    public void saveEmojiUsage(String customEmoji, String channelId, String userId, emojiUseType type) {
+    public void saveEmojiUsage(String customEmoji, String channelId, String userId, emojiUseType type, String emojiId) {
         EmojiStatsEntity emojiStat = new EmojiStatsEntity();
         emojiStat.setDate(LocalDate.now());
         emojiStat.setName(customEmoji);
         emojiStat.setChannelId(channelId);
         emojiStat.setUserId(userId);
         emojiStat.setUseType(type);
+        emojiStat.setEmojiId(emojiId);
         emojiStatsRepository.save(emojiStat);
     }
 

@@ -17,24 +17,26 @@ public interface EmojiStatsRepository extends JpaRepository<EmojiStatsEntity, In
     List<EmojiStatsEntity> findAllByDateBetween(LocalDate from, LocalDate to);
 
     @Query("SELECT NEW se.skaegg.discordbot.jpa.EmojiStatsCountPerDayRaw(" +
-                  "e.date, " +
-                  "e.name, " +
-                  "SUM(CASE WHEN e.useType = 'MESSAGE' THEN 1 ELSE 0 END) as msgCount, " +
-                  "SUM(CASE WHEN e.useType = 'REACTION' THEN 1 ELSE 0 END) as reactCount" +
-                  ") " +
-                  "FROM EmojiStatsEntity e " +
-                  "GROUP BY e.date, e.name " +
-                  "HAVING " +
-                  "SUM(CASE WHEN e.useType = 'MESSAGE' THEN 1 ELSE 0 END) > 0 OR " +
-                  "SUM(CASE WHEN e.useType = 'REACTION' THEN 1 ELSE 0 END) > 0" +
-                  "ORDER BY e.date")
+            "e.date, " +
+            "e.name, " +
+            "SUM(CASE WHEN e.useType = 'MESSAGE' THEN 1 ELSE 0 END) as msgCount, " +
+            "SUM(CASE WHEN e.useType = 'REACTION' THEN 1 ELSE 0 END) as reactCount, " +
+            "e.emojiId" +
+            ") " +
+            "FROM EmojiStatsEntity e " +
+            "GROUP BY e.date, e.name " +
+            "HAVING " +
+            "SUM(CASE WHEN e.useType = 'MESSAGE' THEN 1 ELSE 0 END) > 0 OR " +
+            "SUM(CASE WHEN e.useType = 'REACTION' THEN 1 ELSE 0 END) > 0" +
+            "ORDER BY e.date")
     List<EmojiStatsCountPerDayRaw> countTotalPerDay();
 
     @Query("SELECT NEW se.skaegg.discordbot.jpa.EmojiStatsCountPerDayRaw(" +
             "e.date, " +
             "e.name, " +
             "SUM(CASE WHEN e.useType = 'MESSAGE' THEN 1 ELSE 0 END) as msgCount, " +
-            "SUM(CASE WHEN e.useType = 'REACTION' THEN 1 ELSE 0 END) as reactCount" +
+            "SUM(CASE WHEN e.useType = 'REACTION' THEN 1 ELSE 0 END) as reactCount, " +
+            "e.emojiId" +
             ") " +
             "FROM EmojiStatsEntity e " +
             "WHERE e.date BETWEEN ?1 AND ?2 " +

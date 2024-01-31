@@ -31,10 +31,10 @@ public class MessageListener {
             String userId = event.getMessage().getAuthor().isPresent() ?
                     event.getMessage().getAuthor().get().getId().asString() : null;
 
-            Pattern pattern = Pattern.compile("(<a?)?:(\\w+):(\\d+>)?");
+            Pattern pattern = Pattern.compile("(<a?)?:(\\w+):(\\d+)>?");
             Matcher matcher = pattern.matcher(msgContent);
             while (matcher.find()) {
-                    emojiStats.saveEmojiUsage(matcher.group(2), channelId, userId, EmojiStats.emojiUseType.MESSAGE);
+                    emojiStats.saveEmojiUsage(matcher.group(2), channelId, userId, EmojiStats.emojiUseType.MESSAGE, matcher.group(3));
                 }
         }
         return Mono.empty();

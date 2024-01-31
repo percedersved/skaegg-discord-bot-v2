@@ -75,6 +75,7 @@ public class EmojiStatsController {
 		Map<LocalDate, List<EmojiStatsCountPerDay.Usage>> groupedResult = new LinkedHashMap<>();
 		for (EmojiStatsCountPerDayRaw row : dbResultRaw) {
 			EmojiStatsCountPerDay.Usage usage = new EmojiStatsCountPerDay.Usage(
+					row.getEmojiId(),
 					row.getName(),
 					row.getMsgCount(),
 					row.getReactCount());

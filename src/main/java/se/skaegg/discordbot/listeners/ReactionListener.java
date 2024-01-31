@@ -24,12 +24,13 @@ public class ReactionListener {
 
     private Mono<Void> handle(ReactionAddEvent event) {
         Optional<String> emojiName = event.getEmoji().asEmojiData().name();
+        String emojiId = event.getEmoji().asEmojiData().id().isPresent() ? event.getEmoji().asEmojiData().id().get().asString() : null;
         String channelId = event.getChannelId().asString();
         String userId = event.getUserId().asString();
 
         event.getEmoji().asEmojiData().name().ifPresent(name -> {
             if (name.matches("\\w+")) {
-                emojiStats.saveEmojiUsage(name, channelId, userId, EmojiStats.emojiUseType.REACTION);
+                emojiStats.saveEmojiUsage(name, channelId, userId, EmojiStats.emojiUseType.REACTION, emojiId);
             }
         });
         return Mono.empty();

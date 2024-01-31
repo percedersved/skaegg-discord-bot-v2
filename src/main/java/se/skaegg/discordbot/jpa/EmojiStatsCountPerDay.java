@@ -28,7 +28,8 @@ public class EmojiStatsCountPerDay {
 		this.usage = usage;
 	}
 
-	public record Usage(String name, long msgCount, long reactCount) {
+
+	public record Usage(String emojiId, String name, long msgCount, long reactCount) {
 
 
 	}

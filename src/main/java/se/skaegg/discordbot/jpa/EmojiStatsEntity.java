@@ -29,6 +29,9 @@ public class EmojiStatsEntity {
     @Column(name = "use_type")
     EmojiStats.emojiUseType useType;
 
+    @Column(name = "emoji_id")
+    String emojiId;
+
 
     public Integer getId() {
         return id;
@@ -76,5 +79,13 @@ public class EmojiStatsEntity {
 
     public void setUseType(EmojiStats.emojiUseType useType) {
         this.useType = useType;
+    }
+
+    public String getEmojiId() {
+        return emojiId;
+    }
+
+    public void setEmojiId(String emojiId) {
+        this.emojiId = emojiId;
     }
 }

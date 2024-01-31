@@ -13,13 +13,15 @@ public class EmojiStatsCountPerDayRaw {
 	String name;
 	long msgCount;
 	long reactCount;
+	String emojiId;
 
 
-	public EmojiStatsCountPerDayRaw(LocalDate date, String name, long msgCount, long reactCount) {
+	public EmojiStatsCountPerDayRaw(LocalDate date, String name, long msgCount, long reactCount, String emojiId) {
 		this.date = date;
 		this.name = name;
 		this.msgCount = msgCount;
 		this.reactCount = reactCount;
+		this.emojiId = emojiId;
 	}
 
 	public LocalDate getDate() {
@@ -52,5 +54,13 @@ public class EmojiStatsCountPerDayRaw {
 
 	public void setReactCount(long reactCount) {
 		this.reactCount = reactCount;
+	}
+
+	public String getEmojiId() {
+		return emojiId;
+	}
+
+	public void setEmojiId(String emojiId) {
+		this.emojiId = emojiId;
 	}
 }
