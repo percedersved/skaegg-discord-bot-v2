@@ -1,5 +1,13 @@
 package se.skaegg.discordbot.controllers;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import se.skaegg.discordbot.jpa.*;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -7,22 +15,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import se.skaegg.discordbot.jpa.EmojiStatsCount;
-import se.skaegg.discordbot.jpa.EmojiStatsCountPerDay;
-import se.skaegg.discordbot.jpa.EmojiStatsCountPerDayRaw;
-import se.skaegg.discordbot.jpa.EmojiStatsEntity;
-import se.skaegg.discordbot.jpa.EmojiStatsRepository;
-
 @RestController
 public class EmojiStatsController {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(EmojiStatsController.class);
 	EmojiStatsRepository emojiStatsRepository;
-	List<EmojiStatsCountPerDay> cachedEmojiStatsPerDay;
+	List<EmojiStatsCountPerDayRaw> cachedAllEmojiStatsPerDayRaw;
 	Instant lastEmojiStatsPerDayCacheTime;
 
 	public EmojiStatsController(EmojiStatsRepository emojiStatsRepository) {
@@ -52,28 +50,40 @@ public class EmojiStatsController {
 			@RequestParam(required = false, defaultValue = "30") int count, // This is number of days to get
 			@RequestParam(required = false, defaultValue = "0") int offset) {
 
-		return getCachedEmojisPerDay(from, to, count, offset);
+		LOGGER.info("Received GET request for /emojistatsday");
+		checkCache(); // Check cache. If cache is valid, nothing is done. Otherwise refresh cache
+		List<EmojiStatsCountPerDay> result = filterAndGroupResult(from, to, count, offset);
+		LOGGER.info("Finished processing GET request for /emojistatsday, now returning");
+		return result;
 	}
 
-	private List<EmojiStatsCountPerDay> getCachedEmojisPerDay(LocalDate from, LocalDate to, int count, int offset) {
-
-		// If the cache is valid, return the cached data (cache is valid for 15 minutes)
-		if (cachedEmojiStatsPerDay != null && lastEmojiStatsPerDayCacheTime != null &&
+	private void checkCache() {
+		if (cachedAllEmojiStatsPerDayRaw != null && lastEmojiStatsPerDayCacheTime != null &&
 				lastEmojiStatsPerDayCacheTime.plusSeconds(900).isAfter(Instant.now())) {
-			return cachedEmojiStatsPerDay.subList(offset, Math.min(offset + count, cachedEmojiStatsPerDay.size()));
+			LOGGER.info("Cache for EmojiStatsPerDay is valid, no renewal");
+			return;
 		}
+		// Refresh cache
+		LOGGER.info("Cache for EmojiStatsPerDay is invalid, refreshing from database");
+		cachedAllEmojiStatsPerDayRaw = emojiStatsRepository.countTotalPerDay();
+		lastEmojiStatsPerDayCacheTime = Instant.now();
+	}
 
-		// If the cache is invalid, get the data from the database and renew the cache
-		List<EmojiStatsCountPerDayRaw> dbResultRaw;
+	private List<EmojiStatsCountPerDay> filterAndGroupResult(LocalDate from, LocalDate to, int count, int offset) {
+
+		List<EmojiStatsCountPerDayRaw> resultList;
 		if (from != null && to != null) {
-			dbResultRaw = emojiStatsRepository.countTotalPerDayDateFilter(from, to);
-		}
-		else {
-			dbResultRaw = emojiStatsRepository.countTotalPerDay();
+			// Filter the cached list to only include the correct dates
+			resultList = cachedAllEmojiStatsPerDayRaw.stream()
+					.filter(dbRow -> !(dbRow.getDate().isAfter(from) || dbRow.getDate().isBefore(to)))
+					.toList();
+		} else {
+			// Return correct count of objects based on the count variable
+			resultList = cachedAllEmojiStatsPerDayRaw.subList(offset, Math.min(offset + count, cachedAllEmojiStatsPerDayRaw.size()));
 		}
 
 		Map<LocalDate, List<EmojiStatsCountPerDay.Usage>> groupedResult = new LinkedHashMap<>();
-		for (EmojiStatsCountPerDayRaw row : dbResultRaw) {
+		for (EmojiStatsCountPerDayRaw row : resultList) {
 			EmojiStatsCountPerDay.Usage usage = new EmojiStatsCountPerDay.Usage(
 					row.getEmojiId(),
 					row.getName(),
@@ -90,10 +100,6 @@ public class EmojiStatsController {
 			EmojiStatsCountPerDay stats = new EmojiStatsCountPerDay(entry.getKey(), entry.getValue());
 			result.add(stats);
 		}
-
-		cachedEmojiStatsPerDay = result;
-		lastEmojiStatsPerDayCacheTime = Instant.now();
-		return result.subList(offset, Math.min(offset + count, result.size()));
+		return result;
 	}
-
 }
