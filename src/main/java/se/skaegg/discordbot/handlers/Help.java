@@ -38,6 +38,7 @@ public class Help implements SlashCommand{
                 `/trivia ställning_alltime` - Visar Trivia-ställningen för all tid
                 `/omröstning skapa` - Skapa en omröstning
                 `/omröstning visa` - Sök och visa en omröstning
+                `/emojistats topplista` - Visar en lista över de mest använda custom emojisarna
                 """;
 
         EmbedCreateSpec embed = EmbedCreateSpec.builder()
