@@ -15,7 +15,7 @@ public interface PollVotesRepository extends JpaRepository<PollVotesEntity, Inte
             SELECT new se.skaegg.discordbot.jpa.PollVotesPerPollId(A.value as alternativeName, count(V.id) as voteCount)
             FROM PollVotesEntity V
             RIGHT JOIN PollAlternativesEntity A
-            ON V.alternativeId = A.id
+            ON V.alternativeId.id = A.id
             WHERE A.pollId = ?1
             GROUP BY A.id
             """)

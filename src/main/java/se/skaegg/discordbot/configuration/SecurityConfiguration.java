@@ -3,10 +3,11 @@ package se.skaegg.discordbot.configuration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configurers.userdetails.DaoAuthenticationConfigurer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
@@ -41,19 +42,10 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf().disable()
-                .authorizeHttpRequests((authz) -> {
-                    try {
-                        authz
-//                                .requestMatchers(HttpMethod.GET).permitAll()
-                                .anyRequest().hasRole("ADMIN")
-                                .and()
-                                .httpBasic();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+
+        http.csrf(AbstractHttpConfigurer::disable)
+        .authorizeHttpRequests(authz -> authz.anyRequest().authenticated())
+                .httpBasic(Customizer.withDefaults());
         return http.build();
     }
 

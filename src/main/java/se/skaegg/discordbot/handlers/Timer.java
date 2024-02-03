@@ -5,12 +5,10 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.component.ActionRow;
-import discord4j.core.object.component.LayoutComponent;
 import discord4j.core.object.component.SelectMenu;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.EmbedCreateSpec;
-import discord4j.discordjson.json.ComponentData;
 import discord4j.rest.util.Color;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 
 @Component
@@ -128,9 +127,10 @@ public class Timer implements SlashCommand {
 
     public Mono<Message> showTimer(SelectMenuInteractionEvent event) {
         String timerId = event.getValues().get(0);
-        TimerEntity timer = timerRepository.getById(Integer.parseInt(timerId));
+        Optional<TimerEntity> optTimer = timerRepository.findById(Integer.parseInt(timerId));
+        TimerEntity timer = optTimer.isPresent() ? timer = optTimer.get() : null;
 
-        LocalDateTime expirationDate = timer.getTimeDateTime();
+        LocalDateTime expirationDate = timer != null ? timer.getTimeDateTime() : null;
 
         Duration duration = Duration.between(LocalDateTime.now(), expirationDate);
         long diff = duration.toMinutes();
