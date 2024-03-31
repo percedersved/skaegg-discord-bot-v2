@@ -414,8 +414,9 @@ public class Trivia implements SlashCommand {
         // and subtract the counter to make sure this doesn't run forever
         if (!triviaQuestionsRepository.findByQuestion(question.getQuestion()).isEmpty()) {
             LOG.info(String.format("Trivia question already in database. Trying to fetch new question. Attempt no: %s",
-                    NO_RETRIES_FETCH_UNIQUE_QUESTION - (counter - 1)));
+                    NO_RETRIES_FETCH_UNIQUE_QUESTION - (counter + 1)));
             checkAndSaveQuestion(source, date, url, queryParams, --counter);
+            return;
         }
 
         saveQuestionToDb(question);
