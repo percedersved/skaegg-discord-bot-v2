@@ -22,11 +22,11 @@ public interface TriviaScoresRepository extends JpaRepository<TriviaScoresEntity
     List<TriviaScoresCountPoints> countTotalIdsByAnswerAndDates(LocalDate fromDate, LocalDate toDate);
 
 
-@Query("SELECT new se.skaegg.discordbot.jpa.TriviaPercentageForDateEntity(Q.questionDate, Q.question, ((CAST(SUM(S.correctAnswer) AS DOUBLE) / CAST(COUNT(*) AS float)) * 100.0)) " +
-        "FROM TriviaScoresEntity S " +
-        "LEFT OUTER JOIN TriviaQuestionsEntity Q ON Q.id = S.question.id " +
-        "WHERE Q.questionDate = ?1 " +
-        "GROUP BY Q.id")
+    @Query("SELECT new se.skaegg.discordbot.jpa.TriviaPercentageForDateEntity(Q.questionDate, Q.question, ((CAST(SUM(S.correctAnswer) AS DOUBLE) / CAST(COUNT(*) AS float)) * 100.0)) " +
+            "FROM TriviaScoresEntity S " +
+            "LEFT OUTER JOIN TriviaQuestionsEntity Q ON Q.id = S.question.id " +
+            "WHERE Q.questionDate = ?1 " +
+            "GROUP BY Q.id")
     TriviaPercentageForDateEntity percentageCorrectByDate2(LocalDate date);
 
 
@@ -60,4 +60,14 @@ public interface TriviaScoresRepository extends JpaRepository<TriviaScoresEntity
             "ORDER BY count(S.id) DESC")
     List<TriviaAnswersPerUserMonth> answersPerUserAndMonth(LocalDate start, LocalDate end);
 
+
+     @Query("""
+             SELECT S.userId
+                FROM TriviaScoresEntity S
+                JOIN TriviaQuestionsEntity Q
+                ON S.question.id = Q.id
+                WHERE S.correctAnswer = true
+                AND Q.questionDate = ?1
+             """)
+    List<String> correctScoresPerQuestionDate(LocalDate date);
 }
