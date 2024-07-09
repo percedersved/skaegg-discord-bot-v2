@@ -1,12 +1,10 @@
 package se.skaegg.discordbot.jpa;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
-@Entity(name = "members")
+@Entity
+@Table(name = "members",
+		uniqueConstraints = {@UniqueConstraint(columnNames = {"memberId", "server_id"})})
 public class MemberEntity {
 
 	@Id
@@ -14,7 +12,7 @@ public class MemberEntity {
 	@Column(name = "id", nullable = false, unique = true)
 	Integer id;
 
-	@Column(name = "member_id", nullable = false, unique = true)
+	@Column(name = "member_id", nullable = false)
 	String memberId;
 
 	@Column(name = "server_id", nullable = false)
