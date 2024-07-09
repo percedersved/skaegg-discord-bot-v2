@@ -8,8 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import se.skaegg.discordbot.jpa.TimerEntity;
-import se.skaegg.discordbot.jpa.TimerRepository;
+import se.skaegg.discordbot.entity.Timer;
+import se.skaegg.discordbot.repository.TimerRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,7 +32,7 @@ public class CheckTimersConfiguration {
 
     @Scheduled(cron = "5 * * * * *")
     public void ScheduleTimerCheck() {
-        List<TimerEntity> timers = timerRepository.findByProcessed(false);
+        List<Timer> timers = timerRepository.findByProcessed(false);
 
         timers.stream()
                 .filter(timer -> timer.getTimeDateTime().isBefore(LocalDateTime.now()))
