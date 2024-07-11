@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>se.skaegg</groupId>
 	<artifactId>skaegg-bot</artifactId>
-	<version>2024.07.02</version>
+	<version>2024.07.03</version>
 	<packaging>jar</packaging>
 	<name>skaegg-bot</name>
 	<description>Skägg discord bot</description>
@@ -78,6 +78,14 @@
 			<groupId>io.quickchart</groupId>
 			<artifactId>QuickChart</artifactId>
 			<version>1.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
 		</dependency>
 
 	</dependencies>
