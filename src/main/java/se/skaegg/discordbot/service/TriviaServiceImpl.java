@@ -1,5 +1,6 @@
 package se.skaegg.discordbot.service;
 
+import org.springframework.stereotype.Service;
 import se.skaegg.discordbot.dto.TriviaScorersByDate;
 import se.skaegg.discordbot.repository.TriviaQuestionsRepository;
 import se.skaegg.discordbot.repository.TriviaScoresRepository;
@@ -8,6 +9,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
+@Service
 public class TriviaServiceImpl implements TriviaService {
 
     TriviaQuestionsRepository triviaQuestionsRepository;

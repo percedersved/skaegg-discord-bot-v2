@@ -23,7 +23,8 @@ public class CheckUsersConfiguration {
 	private final GatewayDiscordClient client;
 	private final List<String> serverIds;
 
-	public CheckUsersConfiguration(GatewayDiscordClient client, @Value("${serverIds}") String serverIds,
+	public CheckUsersConfiguration(GatewayDiscordClient client,
+								   @Value("${serverIds}") String serverIds,
 								   MemberServiceImpl memberService) {
 		this.client = client;
 		this.serverIds = List.of(serverIds.split(","));
@@ -33,7 +34,7 @@ public class CheckUsersConfiguration {
 	@Scheduled(cron = "${getusers.cron.expression}")
 	public void updateUsersFromServers() {
 
-		for (String serverId : serverIds) {
+		serverIds.forEach(serverId -> {
 			Snowflake guildId = Snowflake.of(serverId);
 			client.getGuildById(guildId)
 					.flatMapMany(Guild::getMembers)
@@ -42,8 +43,6 @@ public class CheckUsersConfiguration {
 						LOG.debug("Saving members to DB. Total members on server {}: {}", serverId, members.size());
 						memberService.saveMember(members, serverId);
 					});
+		});
 		}
-	}
-
-
 }

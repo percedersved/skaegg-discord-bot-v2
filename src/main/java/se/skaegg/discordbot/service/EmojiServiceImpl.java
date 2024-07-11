@@ -2,6 +2,7 @@ package se.skaegg.discordbot.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 import se.skaegg.discordbot.dto.EmojiStatsCount;
 import se.skaegg.discordbot.dto.EmojiStatsCountPerDay;
 import se.skaegg.discordbot.dto.EmojiStatsCountPerDayRaw;
@@ -15,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+@Service
 public class EmojiServiceImpl implements EmojiService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EmojiServiceImpl.class);

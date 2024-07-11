@@ -108,13 +108,14 @@ public class Timer implements SlashCommand {
         long diff = 0;
 
         List<SelectMenu.Option> timerOptions = new ArrayList<>();
-        if (!timers.isEmpty()) {
-            // Add all timernames from database to separate list
-            for (se.skaegg.discordbot.entity.Timer t : timers) {
-                timerOptions.add(SelectMenu.Option.of(t.getKey(), t.getId().toString()));
-            }
+        if (timers.isEmpty()) {
+            return event.editReply("Det finns inga nedräkningar").then();
         }
 
+        // Add all timernames from database to separate list
+        for (se.skaegg.discordbot.entity.Timer t : timers) {
+            timerOptions.add(SelectMenu.Option.of(t.getKey(), t.getId().toString()));
+        }
         return event.editReply()
                 .withComponents(ActionRow.of(SelectMenu.of("timers", timerOptions))).then();
     }
