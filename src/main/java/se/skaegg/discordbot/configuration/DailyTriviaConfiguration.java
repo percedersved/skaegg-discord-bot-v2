@@ -6,10 +6,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import se.skaegg.discordbot.handlers.Trivia;
-import se.skaegg.discordbot.jpa.TriviaButtonClicksRepository;
-import se.skaegg.discordbot.jpa.TriviaQuestionsRepository;
-import se.skaegg.discordbot.jpa.TriviaScoresRepository;
+import se.skaegg.discordbot.handler.Trivia;
+import se.skaegg.discordbot.repository.TriviaButtonClicksRepository;
+import se.skaegg.discordbot.repository.TriviaQuestionsRepository;
+import se.skaegg.discordbot.repository.TriviaScoresRepository;
 
 import java.time.LocalDate;
 
@@ -51,12 +51,4 @@ public class DailyTriviaConfiguration {
         Trivia trivia = new Trivia(triviaQuestionsRepository, triviaScoresRepository, triviaButtonClicksRepository, client);
         trivia.displayCorrectAnswerPercentForDate(LocalDate.now().minusDays(1L), channelId);
     }
-
-
-    // TODO: This is new. Trying to post last months results on the first day of the next month
-//    @Scheduled(cron = "${trivia.cron.scorepost}")
-//    public void postMonthlyResults() {
-//        Trivia trivia = new Trivia(triviaQuestionsRepository, triviaScoresRepository, client);
-
-//    }
 }

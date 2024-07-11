@@ -7,9 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import se.skaegg.discordbot.handlers.Poll;
-import se.skaegg.discordbot.jpa.PollsEntity;
-import se.skaegg.discordbot.jpa.PollsRepository;
+import se.skaegg.discordbot.handler.Poll;
+import se.skaegg.discordbot.entity.Polls;
+import se.skaegg.discordbot.repository.PollsRepository;
 
 import java.util.List;
 
@@ -29,10 +29,10 @@ public class CheckPollsConfiguration {
 
     @Scheduled(cron = "0 0 7 * * *")
     public void SchedulePollCheck() {
-        List<PollsEntity> polls = pollsRepository.findByProcessed(false);
+        List<Polls> polls = pollsRepository.findByProcessed(false);
 
         polls.stream()
-                .filter(PollsEntity::isPassedOrToday)
+                .filter(Polls::isPassedOrToday)
                 .forEach(pollEntity -> {
                     client.getChannelById(Snowflake.of(pollEntity.getChannelId()))
                             .ofType(MessageChannel.class)
