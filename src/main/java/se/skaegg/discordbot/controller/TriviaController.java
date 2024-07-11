@@ -10,7 +10,7 @@ import se.skaegg.discordbot.service.TriviaService;
 import java.time.LocalDate;
 import java.util.List;
 
-@RestController()
+@RestController
 public class TriviaController {
 
 	TriviaService triviaService;
