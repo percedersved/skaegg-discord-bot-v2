@@ -39,7 +39,11 @@ public interface TriviaQuestionsRepository extends JpaRepository<TriviaQuestions
                 LEFT JOIN TriviaButtonClicks tbc
                 ON tq.id = tbc.question.id
                 AND tbc.userId = ?1
+                LEFT JOIN TriviaScores ts
+                ON tq.id = ts.question.id
+                AND ts.userId = ?1
                 WHERE tbc.userId IS NULL
+                AND ts.userId IS NULL
                 ORDER BY tq.questionDate DESC
                 LIMIT 1
             """)
