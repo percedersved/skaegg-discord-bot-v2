@@ -7,6 +7,7 @@ import se.skaegg.discordbot.entity.TriviaQuestions;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TriviaQuestionsRepository extends JpaRepository<TriviaQuestions, Integer> {
@@ -31,4 +32,16 @@ public interface TriviaQuestionsRepository extends JpaRepository<TriviaQuestions
                 GROUP BY questionDate
             """)
     List<LocalDate> findAllDistinctQuestionDatesBetween(LocalDate fromDate, LocalDate toDate);
+
+    @Query("""
+            SELECT tq.id
+                FROM TriviaQuestions tq
+                LEFT JOIN TriviaButtonClicks tbc
+                ON tq.id = tbc.question.id
+                AND tbc.userId = ?1
+                WHERE tbc.userId IS NULL
+                ORDER BY tq.questionDate DESC
+                LIMIT 1
+            """)
+    Optional<Integer> findIdByYoungestQuestionNotAnsweredByUser(String userId);
 }

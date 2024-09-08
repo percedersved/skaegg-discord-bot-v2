@@ -98,6 +98,9 @@ public class Trivia implements SlashCommand {
                 List<ApplicationCommandInteractionOption> subCommandOptions = subCommand.getOptions();
                 return displayAnswersPerUserAndMonth(event, subCommandOptions);
             }
+            case "senast_obesvarade_fråga" -> {
+                return getYoungestUnansweredQuestionForUser(event);
+            }
             default -> {
                 return Mono.empty();
             }
@@ -119,6 +122,28 @@ public class Trivia implements SlashCommand {
                 .retry(3)
                 .subscribe();
         return Mono.empty();
+    }
+
+    public void createGetQuestionButton(LocalDate questionDate, ChatInputInteractionEvent event, boolean questionFound) {
+
+        if (questionFound) {
+            event.createFollowup()
+                    .withContent("Klicka på \"Hämta\" för att hämta frågan. " +
+                            "Du har en begränsad tid på dig att svara efter att du fått frågan, en varning kommer när du har 5 sekunder på dig")
+                    .withComponents(ActionRow.of(
+                                    Button.danger("getQuestion_" + questionDate, "Hämta (" + questionDate + ")")
+                            )
+                    )
+                    .withEphemeral(true)
+                    .retry(3L)
+                    .subscribe();
+        }
+        else {
+            event.createFollowup("Det finns inga frågor kvar för dig att besvara")
+                    .withEphemeral(true)
+                    .retry()
+                    .subscribe();
+        }
     }
 
     public Mono<Void> createQuestions(String url, String queryParams, String source, LocalDate date, ButtonInteractionEvent event) {
@@ -151,7 +176,7 @@ public class Trivia implements SlashCommand {
         if (triviaButtonClicksRepository.findByUserIdAndQuestion(interactionUser, questionsEntity) != null) {
             event.createFollowup()
                     .withEphemeral(true)
-                    .withContent("Du har redan hämtat dagens fråga. No answering for you! Dagens fråga var: **" + questionsEntity.getQuestion() + "**")
+                    .withContent("Du har redan hämtat den frågan. No answering for you! Frågan var: **" + questionsEntity.getQuestion() + "**")
                     .subscribe();
             return Mono.empty();
         }
@@ -213,7 +238,7 @@ public class Trivia implements SlashCommand {
                     .withEphemeral(true)
                     .withComponents(ActionRow.of(
                             Button.primary(answersMap.get(allAnswers.get(0)), "A"),
-                            Button.primary(answersMap.get(allAnswers.get(1)), "A")
+                            Button.primary(answersMap.get(allAnswers.get(1)), "B")
                             )
                     )
                     .retry(3)
@@ -576,6 +601,27 @@ public class Trivia implements SlashCommand {
         event.createFollowup()
                 .withEmbeds(embed)
                 .subscribe();
+
+        return Mono.empty();
+    }
+
+    public Mono<Void> getYoungestUnansweredQuestionForUser(ChatInputInteractionEvent event) {
+        event.deferReply().withEphemeral(true).subscribe();
+
+        Snowflake userSnowflake = event.getInteraction().getUser().getId();
+        Optional<Integer> youngestQuestionId = triviaQuestionsRepository.findIdByYoungestQuestionNotAnsweredByUser(userSnowflake.asString());
+        boolean questionFound = youngestQuestionId.isPresent();
+
+        // If no question can be found there should be no more questions for this user to answer
+        if (!questionFound) {
+            createGetQuestionButton(null, event, false);
+            return Mono.empty();
+        }
+
+        // There is a question that the user hasn't answered
+        Optional<TriviaQuestions> question = triviaQuestionsRepository.findById(youngestQuestionId.get());
+        TriviaQuestions triviaQuestion = question.get();
+        createGetQuestionButton(triviaQuestion.getQuestionDate(), event, true);
 
         return Mono.empty();
     }

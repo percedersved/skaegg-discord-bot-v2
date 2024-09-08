@@ -62,6 +62,11 @@
           "required": true
         }
       ]
+    },
+    {
+      "name": "senast_obesvarade_fråga",
+      "description": "Visa min senast obesvarade fråga",
+      "type": 1
     }
     ]
 }
