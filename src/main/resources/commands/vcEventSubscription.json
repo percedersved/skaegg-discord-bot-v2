@@ -1,0 +1,18 @@
+{
+  "type": 1,
+  "name": "voice_prenumeration",
+  "description": "Voice prenumeration",
+  "autocomplete": true,
+  "options": [
+    {
+      "name": "registrera",
+      "description": "Registrera dig för att få DM när någon går med i en voice kanal",
+      "type": 1
+    },
+    {
+      "name": "avregistrera",
+      "description": "Avregistrera dig för att få DM när någon går med i en voice kanal",
+      "type": 1
+    }
+  ]
+}
