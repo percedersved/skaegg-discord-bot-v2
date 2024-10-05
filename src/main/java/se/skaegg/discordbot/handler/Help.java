@@ -39,6 +39,8 @@ public class Help implements SlashCommand{
                 `/omröstning skapa` - Skapa en omröstning
                 `/omröstning visa` - Sök och visa en omröstning
                 `/emojistats topplista` - Visar en lista över de mest använda custom emojisarna
+                `/voice_prenumeration registrera - Registrera dig för att få DMs när någon ansluter till en voicekanal
+                `/voice_prenumeration avregistrera - Avregistrera dig så du inte får DMs vid anslutning till voicekanal
                 """;
 
         EmbedCreateSpec embed = EmbedCreateSpec.builder()
