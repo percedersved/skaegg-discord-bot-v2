@@ -46,7 +46,7 @@ public class VcEventListener {
         var oldState = event.getOld().orElse(null);
 
         VoiceChannel vc = newState.getChannel().block();
-        // If newState dosen't have a channel it means that this event was someone leaving. Ignore this.
+        // If newState doesn't have a channel it means that this event was someone leaving. Ignore this.
         if (vc == null) {
             return Mono.empty();
         }
@@ -59,6 +59,12 @@ public class VcEventListener {
 
         String usersList = String.join(", ", usersInVc);
 
+        String currentUserId = event.getCurrent().getUser()
+                .map(User::getId)
+                .map(Snowflake::asString)
+                .blockOptional()
+                .orElseThrow();
+
         String embedDescription = String.format("Någon joinade voicekanal: **%s**. Just nu är **%s** i kanalen", vc.getName(), usersList);
 
         EmbedCreateSpec embed = EmbedCreateSpec.builder()
@@ -70,6 +76,7 @@ public class VcEventListener {
         if (oldState == null || !newState.getChannelId().equals(oldState.getChannelId())) {
             return newState.getChannel()
                     .flatMap(channel -> Mono.when(membersInDb.stream()
+                            .filter(m -> !currentUserId.equals(m.getMemberId()))
                             .map(member -> client.getUserById(Snowflake.of(member.getMemberId()))
                                     .flatMap(User::getPrivateChannel)
                                     .flatMap(privateChannel -> privateChannel.createMessage(embed))
