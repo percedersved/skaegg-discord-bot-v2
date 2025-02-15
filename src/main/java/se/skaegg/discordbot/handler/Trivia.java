@@ -416,7 +416,7 @@ public class Trivia implements SlashCommand {
     private void checkAndSaveQuestion(String source, LocalDate date, String url, String queryParams, int counter) {
 
         if (counter <= 1) {
-            LOG.error("Tried to fetch new questions 5 times but only got duplicates. Can't get new question from API");
+            LOG.error("Tried to fetch new questions 5 times but only got duplicates or questions with to much text. Can't get new question from API");
             return;
         }
 
@@ -443,6 +443,15 @@ public class Trivia implements SlashCommand {
         // and subtract the counter to make sure this doesn't run forever
         if (!triviaQuestionsRepository.findByQuestion(question.getQuestion()).isEmpty()) {
             LOG.info(String.format("Trivia question already in database. Trying to fetch new question. Attempt no: %s",
+                    NO_RETRIES_FETCH_UNIQUE_QUESTION - (counter + 1)));
+            checkAndSaveQuestion(source, date, url, queryParams, --counter);
+            return;
+        }
+
+        int incorrectAnswersLength = question.getIncorrectAnswers().stream().mapToInt(String::length).sum();
+        int questionAndAnswersLength = incorrectAnswersLength + question.getQuestion().length() + question.getCorrectAnswer().length();
+        if (questionAndAnswersLength > 196) { // 200 are the limit of Discord API for ephemeral messages. Since we add 4 emojis to the message we check for 196
+            LOG.info(String.format("Trivia question and answers length combined are too long for Discords API. Trying to fetch new question. Attempt no: %s",
                     NO_RETRIES_FETCH_UNIQUE_QUESTION - (counter + 1)));
             checkAndSaveQuestion(source, date, url, queryParams, --counter);
             return;
