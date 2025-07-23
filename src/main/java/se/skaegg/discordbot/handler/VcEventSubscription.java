@@ -3,6 +3,7 @@ package se.skaegg.discordbot.handler;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
+import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.EmbedCreateSpec;
@@ -38,7 +39,7 @@ public class VcEventSubscription extends AbstractMessageHandler implements Slash
 
         deferEventReply(event, true);
 
-        ApplicationCommandInteractionOption subCommand = event.getOptions().get(0);
+        ApplicationCommandInteractionOption subCommand = event.getOptions().getFirst();
         String subCommandName = subCommand.getName();
 
         switch (subCommandName) {
@@ -57,6 +58,14 @@ public class VcEventSubscription extends AbstractMessageHandler implements Slash
         User user = event.getInteraction().getUser();
         Member member = memberRepository.findByMemberIdAndServerId(user.getId().asString(), serverId);
 
+        String isLeaveNoticeStr = event.getOptions().getFirst().getOptions()
+                .getFirst()
+                .getValue()
+                .map(ApplicationCommandInteractionOptionValue::asString)
+                .orElseThrow();
+
+        boolean isLeaveNotice = Boolean.parseBoolean(isLeaveNoticeStr);
+
         String embedDescription;
         VcSubscriptionUser alreadyPresentUser = vcSubscriptionUsersRepository.findByMemberAndServerId(member, serverId);
         if (alreadyPresentUser == null) {
@@ -65,6 +74,7 @@ public class VcEventSubscription extends AbstractMessageHandler implements Slash
             vcSubscriptionUser.setMember(member);
             vcSubscriptionUser.setServerId(serverId);
             vcSubscriptionUser.setSubscriptionDate(LocalDate.now());
+            vcSubscriptionUser.setLeaveNotice(isLeaveNotice);
 
             vcSubscriptionUsersRepository.save(vcSubscriptionUser);
         } else {

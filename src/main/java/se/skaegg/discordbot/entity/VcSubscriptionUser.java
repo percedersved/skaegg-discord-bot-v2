@@ -21,6 +21,9 @@ public class VcSubscriptionUser {
     @Column(name = "server_id")
     String serverId;
 
+    @Column(name = "leave_notice", columnDefinition = "BOOLEAN DEFAULT FALSE")
+    boolean leaveNotice;
+
     @Column(name = "subscription_date")
     LocalDate subscriptionDate;
 
@@ -47,6 +50,14 @@ public class VcSubscriptionUser {
 
     public void setServerId(String serverId) {
         this.serverId = serverId;
+    }
+
+    public boolean isLeaveNotice() {
+        return leaveNotice;
+    }
+
+    public void setLeaveNotice(boolean leaveNotice) {
+        this.leaveNotice = leaveNotice;
     }
 
     public LocalDate getSubscriptionDate() {

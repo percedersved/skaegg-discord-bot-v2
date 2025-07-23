@@ -45,46 +45,90 @@ public class VcEventListener {
         var newState = event.getCurrent();
         var oldState = event.getOld().orElse(null);
 
-        VoiceChannel vc = newState.getChannel().block();
-        // If newState doesn't have a channel it means that this event was someone leaving. Ignore this.
-        if (vc == null) {
-            return Mono.empty();
-        }
-
-        List<String> usersInVc = vc.getVoiceStates()
-                .flatMap(VoiceState::getMember)
-                .map(discord4j.core.object.entity.Member::getDisplayName)
-                .collectList()
-                .block();
-
-        String usersList = String.join(", ", usersInVc);
-
-        String currentUserId = event.getCurrent().getUser()
+        String currentUserId = newState.getUser()
                 .map(User::getId)
                 .map(Snowflake::asString)
                 .blockOptional()
                 .orElseThrow();
 
-        String embedDescription = String.format("Någon joinade voicekanal: **%s**. Just nu är **%s** i kanalen", vc.getName(), usersList);
+        VoiceChannel newStateVc = newState.getChannel().block();
 
-        EmbedCreateSpec embed = EmbedCreateSpec.builder()
+        Member memberToJoinOrLeave = membersInDb.stream()
+                .filter(m -> m.getMemberId()
+                        .equals(currentUserId))
+                .findFirst()
+                .get();
+
+        VcSubscriptionUser vcSubscriptionUser = vcSubscriptionUsersRepository.findByMemberAndServerId(memberToJoinOrLeave, serverId);
+
+        EmbedCreateSpec embed;
+
+        // If newState doesn't have a channel it means that this event was someone leaving.
+        if (newStateVc == null && oldState != null
+                && vcSubscriptionUser.isLeaveNotice()) {
+            VoiceChannel oldStateVc = oldState.getChannel().block();
+            List<String> usersInVc = oldStateVc.getVoiceStates()
+                    .flatMap(VoiceState::getMember)
+                    .map(discord4j.core.object.entity.Member::getDisplayName)
+                    .collectList()
+                    .block();
+
+            String usersList;
+            // No one is in the voice channel
+            assert usersInVc != null;
+            if (usersInVc.isEmpty()) {
+                usersList = "ingen";
+            } else {
+                usersList = String.join(", ", usersInVc);
+            }
+
+            String embedDescription = String.format("**%s** lämnade <#%s>. Just nu är %s i kanalen",
+                    memberToJoinOrLeave.getDisplayName(), oldStateVc.getId().asString(), usersList);
+
+            embed = createEmbed(embedDescription);
+
+
+            return pushMessageToMember(membersInDb, currentUserId, embed);
+
+
+        } else {
+            List<String> usersInVc = newStateVc.getVoiceStates()
+                    .flatMap(VoiceState::getMember)
+                    .map(discord4j.core.object.entity.Member::getDisplayName)
+                    .collectList()
+                    .block();
+
+            String usersList = String.join(", ", usersInVc);
+
+            String embedDescription = String.format("**%s** joinade <#%s>. Just nu är **%s** i kanalen",
+                    memberToJoinOrLeave.getDisplayName(), newStateVc.getId().asString(), usersList);
+
+            embed = createEmbed(embedDescription);
+
+            if (oldState == null || !newState.getChannelId().equals(oldState.getChannelId())) {
+                return pushMessageToMember(membersInDb, currentUserId, embed);
+            }
+        }
+
+        return Mono.empty();
+    }
+
+    private EmbedCreateSpec createEmbed(String description) {
+       return EmbedCreateSpec.builder()
                 .color(Color.of(90, 130, 180))
                 .title("Voicekanal :speaker:")
-                .description(embedDescription)
+                .description(description)
                 .build();
+    }
 
-        if (oldState == null || !newState.getChannelId().equals(oldState.getChannelId())) {
-            return newState.getChannel()
-                    .flatMap(channel -> Mono.when(membersInDb.stream()
-                            .filter(m -> !currentUserId.equals(m.getMemberId()))
-                            .map(member -> client.getUserById(Snowflake.of(member.getMemberId()))
-                                    .flatMap(User::getPrivateChannel)
-                                    .flatMap(privateChannel -> privateChannel.createMessage(embed))
-                            )
-                            .toArray(Mono[]::new)
-                        )
-                    );
-        }
-        return Mono.empty();
+    private Mono<Void> pushMessageToMember(List<Member> members, String currentUserId, EmbedCreateSpec embed) {
+        return Mono.when(members.stream()
+                .filter(m -> !currentUserId.equals(m.getMemberId()))
+                .map(member -> client.getUserById(Snowflake.of(member.getMemberId()))
+                        .flatMap(User::getPrivateChannel)
+                        .flatMap(privateChannel -> privateChannel.createMessage(embed))
+                )
+                .toArray(Mono[]::new)
+        );
     }
 }
