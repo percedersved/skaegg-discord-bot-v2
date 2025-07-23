@@ -7,7 +7,25 @@
     {
       "name": "registrera",
       "description": "Registrera dig för att få DM när någon går med i en voice kanal",
-      "type": 1
+      "type": 1,
+      "options": [
+        {
+          "name": "leaves",
+          "description": "Få DMs även när någon lämnar en voicekanal, Ja/Nej",
+          "type": 3,
+          "required": true,
+          "choices": [
+            {
+              "name": "Ja",
+              "value": "true"
+            },
+            {
+              "name": "Nej",
+              "value": "false"
+            }
+          ]
+        }
+      ]
     },
     {
       "name": "avregistrera",
