@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>se.skaegg</groupId>
 	<artifactId>skaegg-bot</artifactId>
-	<version>2025.07.01</version>
+	<version>2025.07.02</version>
 	<packaging>jar</packaging>
 	<name>skaegg-bot</name>
 	<description>Skägg discord bot</description>

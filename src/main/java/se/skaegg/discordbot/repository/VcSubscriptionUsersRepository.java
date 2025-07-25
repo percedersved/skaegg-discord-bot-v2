@@ -13,4 +13,6 @@ public interface VcSubscriptionUsersRepository extends JpaRepository<VcSubscript
     List<VcSubscriptionUser> findAllByServerId(String serverId);
 
     VcSubscriptionUser findByMemberAndServerId(Member member, String serverId);
+
+    List<VcSubscriptionUser> findByLeaveNoticeAndServerId(Boolean leaveNotice, String serverId);
 }

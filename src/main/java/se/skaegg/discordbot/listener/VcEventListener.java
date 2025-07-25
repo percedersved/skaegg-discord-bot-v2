@@ -8,6 +8,8 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.VoiceChannel;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import se.skaegg.discordbot.entity.Member;
@@ -18,6 +20,8 @@ import java.util.List;
 
 @Component
 public class VcEventListener {
+
+    static final Logger LOG = LoggerFactory.getLogger(VcEventListener.class);
 
     GatewayDiscordClient client;
     VcSubscriptionUsersRepository vcSubscriptionUsersRepository;
@@ -64,8 +68,17 @@ public class VcEventListener {
         EmbedCreateSpec embed;
 
         // If newState doesn't have a channel it means that this event was someone leaving.
-        if (newStateVc == null && oldState != null
-                && vcSubscriptionUser.isLeaveNotice()) {
+        if (newStateVc == null && oldState != null) {
+            // If the user doesn't want DMs when someone leave just return
+            if (!vcSubscriptionUser.isLeaveNotice()) {
+                return Mono.empty();
+            }
+
+            List<VcSubscriptionUser> usersWithLeaveNotice = vcSubscriptionUsersRepository.findByLeaveNoticeAndServerId(true, serverId);
+            List<Member> membersWithLeaveNotice = usersWithLeaveNotice.stream()
+                    .map(VcSubscriptionUser::getMember)
+                    .toList();
+
             VoiceChannel oldStateVc = oldState.getChannel().block();
             List<String> usersInVc = oldStateVc.getVoiceStates()
                     .flatMap(VoiceState::getMember)
@@ -82,14 +95,11 @@ public class VcEventListener {
                 usersList = String.join(", ", usersInVc);
             }
 
-            String embedDescription = String.format("**%s** lämnade <#%s>. Just nu är %s i kanalen",
+            var embedDescription = String.format("**%s** lämnade <#%s>. Just nu är %s i kanalen",
                     memberToJoinOrLeave.getDisplayName(), oldStateVc.getId().asString(), usersList);
 
             embed = createEmbed(embedDescription);
-
-
-            return pushMessageToMember(membersInDb, currentUserId, embed);
-
+            return pushMessageToMember(membersWithLeaveNotice, currentUserId, embed);
 
         } else {
             List<String> usersInVc = newStateVc.getVoiceStates()
@@ -98,9 +108,9 @@ public class VcEventListener {
                     .collectList()
                     .block();
 
-            String usersList = String.join(", ", usersInVc);
+            var usersList = String.join(", ", usersInVc);
 
-            String embedDescription = String.format("**%s** joinade <#%s>. Just nu är **%s** i kanalen",
+            var embedDescription = String.format("**%s** joinade <#%s>. Just nu är **%s** i kanalen",
                     memberToJoinOrLeave.getDisplayName(), newStateVc.getId().asString(), usersList);
 
             embed = createEmbed(embedDescription);
@@ -123,11 +133,11 @@ public class VcEventListener {
 
     private Mono<Void> pushMessageToMember(List<Member> members, String currentUserId, EmbedCreateSpec embed) {
         return Mono.when(members.stream()
-                .filter(m -> !currentUserId.equals(m.getMemberId()))
-                .map(member -> client.getUserById(Snowflake.of(member.getMemberId()))
+                        .filter(m -> !currentUserId.equals(m.getMemberId()))
+                        .map(member -> client.getUserById(Snowflake.of(member.getMemberId()))
                         .flatMap(User::getPrivateChannel)
                         .flatMap(privateChannel -> privateChannel.createMessage(embed))
-                )
+                        )
                 .toArray(Mono[]::new)
         );
     }
