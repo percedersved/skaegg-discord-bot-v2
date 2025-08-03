@@ -1,19 +1,15 @@
 package se.skaegg.discordbot.listener;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.object.entity.Message;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import se.skaegg.discordbot.handler.MovieSearch;
 import se.skaegg.discordbot.handler.Poll;
 import se.skaegg.discordbot.handler.Timer;
-import se.skaegg.discordbot.repository.PollAlternativesRepository;
-import se.skaegg.discordbot.repository.PollVotesRepository;
-import se.skaegg.discordbot.repository.PollsRepository;
-import se.skaegg.discordbot.repository.TimerRepository;
 
 @Component
 public class SelectMenuListener {
@@ -21,17 +17,17 @@ public class SelectMenuListener {
     @Value("${omdb.api.token}")
     String apiToken;
 
-    @Autowired
-    TimerRepository timerRepository;
-    @Autowired
-    PollsRepository pollsRepository;
-    @Autowired
-    PollAlternativesRepository pollAlternativesRepository;
-    @Autowired
-    PollVotesRepository pollVotesRepository;
+    MovieSearch movieSearch;
+    Timer timer;
+    Poll poll;
 
-
-    public SelectMenuListener(GatewayDiscordClient client) {
+    public SelectMenuListener(GatewayDiscordClient client,
+                              MovieSearch movieSearch,
+                              Timer timer,
+                              Poll poll) {
+        this.movieSearch = movieSearch;
+        this.timer = timer;
+        this.poll = poll;
         client.on(SelectMenuInteractionEvent.class, this::handle).subscribe();
     }
 
@@ -45,14 +41,13 @@ public class SelectMenuListener {
             return new MovieSearch().getMovie(event, apiToken);
         }
         else if (event.getCustomId().equals("timers")) {
-            return new Timer(timerRepository).showTimer(event);
+            return timer.showTimer(event);
         }
         else if (event.getCustomId().equals("polls")) {
-            return new Poll(pollsRepository, pollAlternativesRepository, pollVotesRepository).showPoll(event);
+            return poll.showPoll(event);
         }
         else {
             return Mono.empty();
         }
     }
 }
-

@@ -1,24 +1,24 @@
 package se.skaegg.discordbot.listener;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.springframework.stereotype.Component;
+
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.channel.MessageChannel;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import se.skaegg.discordbot.handler.EmojiStats;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Component
 public class MessageListener {
 
-    @Autowired
-    GatewayDiscordClient client;
-    @Autowired
     EmojiStats emojiStats;
-    public MessageListener(GatewayDiscordClient client) {
+
+    public MessageListener(GatewayDiscordClient client,
+                           EmojiStats emojiStats) {
+        this.emojiStats = emojiStats;
         client.on(MessageCreateEvent.class, this::handle).subscribe();
     }
 

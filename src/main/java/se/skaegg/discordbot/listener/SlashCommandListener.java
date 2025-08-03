@@ -1,28 +1,30 @@
 package se.skaegg.discordbot.listener;
 
+import java.util.Collection;
+import java.util.List;
+
+import org.springframework.stereotype.Component;
+
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import se.skaegg.discordbot.handler.CommandStatistics;
 import se.skaegg.discordbot.handler.SlashCommand;
 
-import java.util.Collection;
-import java.util.List;
-
 @Component
 public class SlashCommandListener {
 
-    @Autowired
     CommandStatistics commandStatistics;
 
     private final Collection<SlashCommand> commands;
 
-    public SlashCommandListener(List<SlashCommand> slashCommands, GatewayDiscordClient client) {
-        commands = slashCommands;
+    public SlashCommandListener(List<SlashCommand> slashCommands,
+                                CommandStatistics commandStatistics,
+                                GatewayDiscordClient client) {
+        this.commandStatistics = commandStatistics;
 
+        commands = slashCommands;
         client.on(ChatInputInteractionEvent.class, this::handle).subscribe();
     }
 
