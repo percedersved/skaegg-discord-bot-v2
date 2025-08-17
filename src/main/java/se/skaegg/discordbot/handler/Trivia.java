@@ -663,7 +663,7 @@ public class Trivia implements SlashCommand {
             String winner = "<@" + triviaScoresCountPoints.getFirst().getUserId() + ">";
             Long points = triviaScoresCountPoints.getFirst().getPoints();
             winnerText = String.format("Månadens trivia vinner %s på %d poäng!, Grattis! :tada:", winner, points);
-            embed = createStandingsEmbed(scoresPeriod.CURRENT_MONTH);
+            embed = createStandingsEmbed(scoresPeriod.PREVIOUS_MONTH);
         }
 
         client.getChannelById(Snowflake.of(channelId))
