@@ -1,0 +1,15 @@
+{
+  "name": "trivia_delete_button_click",
+  "description": "Ta bort att en användare klickat på hämta fråga så man kan testa igen",
+  "type": 1,
+  "autocomplete": true,
+  "default_member_permissions": "268435456",
+  "options": [
+    {
+      "name": "datum",
+      "description": "Datum i formatet \"yyyy-MM-dd\"",
+      "type": 3,
+      "required": true
+    }
+  ]
+}
