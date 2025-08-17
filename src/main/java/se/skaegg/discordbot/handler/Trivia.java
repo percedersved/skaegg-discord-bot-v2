@@ -56,14 +56,15 @@ public class Trivia implements SlashCommand {
     private static final String ANSWERING_TIME_REMINDER_TEXT = "Du har endast 5 sekunder kvar, synda synda!";
     private static final int NO_RETRIES_FETCH_UNIQUE_QUESTION = 5;
 
-    @Value("${trivia.results.maxresults}")
     Integer maxResults;
 
 
-    public Trivia(TriviaQuestionsRepository triviaQuestionsRepository,
+    public Trivia(@Value("${trivia.results.maxresults}") Integer maxResults,
+                  TriviaQuestionsRepository triviaQuestionsRepository,
                   TriviaScoresRepository triviaScoresRepository,
                   TriviaButtonClicksRepository triviaButtonClicksRepository,
                   GatewayDiscordClient client) {
+        this.maxResults = maxResults;
         this.triviaQuestionsRepository = triviaQuestionsRepository;
         this.triviaScoresRepository = triviaScoresRepository;
         this.triviaButtonClicksRepository = triviaButtonClicksRepository;
@@ -465,6 +466,17 @@ public class Trivia implements SlashCommand {
     private Mono<Void> showStandings(ChatInputInteractionEvent event, scoresPeriod period) {
         event.deferReply().subscribe();
 
+        EmbedCreateSpec embed = createStandingsEmbed(period);
+
+        if (embed == null) { // If there are no standings for the selected period
+            return event.createFollowup("Det finns ingen ställning för den perioden än").then();
+        }
+
+        return event.createFollowup().withEmbeds(embed).then();
+    }
+
+
+    private EmbedCreateSpec createStandingsEmbed(scoresPeriod period) {
         LocalDate fromDate = null;
         LocalDate toDate = null;
         String nowShowing = null;
@@ -502,6 +514,10 @@ public class Trivia implements SlashCommand {
 
         int numberToShow = Math.min(triviaScoresCountPoints.size(), maxResults); // This is just to know what to use the looping. If there are more than {maxResults} rows returned from DB {maxResults} should be max
 
+        if (numberToShow == 0) {
+            return null;
+        }
+
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < numberToShow ; i++){
             switch (i) {
@@ -519,17 +535,11 @@ public class Trivia implements SlashCommand {
             sb.append("\n");
         }
 
-        if (numberToShow == 0) {
-            return event.createFollowup("Det finns ingen ställning för den perioden än").then();
-        }
-
-        EmbedCreateSpec embed = EmbedCreateSpec.builder()
+        return EmbedCreateSpec.builder()
                 .color(Color.of(90, 130, 180))
                 .title("Ställning " + nowShowing)
                 .addField(EmbedCreateFields.Field.of("Användare - Poäng", sb.toString(), true))
                 .build();
-
-        return event.createFollowup().withEmbeds(embed).then();
     }
 
 
@@ -637,6 +647,34 @@ public class Trivia implements SlashCommand {
 
 
     public String getInteractionUser() { return interactionUser; }
+
+    public Mono<Void> displayMonthlyWinner(String channelId) {
+        LocalDate fromDate = YearMonth.now().atDay(1);
+        LocalDate toDate = YearMonth.now().atEndOfMonth();
+
+        List<TriviaScoresCountPoints> triviaScoresCountPoints = triviaScoresRepository.countTotalIdsByAnswerAndDates(fromDate, toDate);
+
+        final String winnerText;
+        EmbedCreateSpec embed;
+        if (triviaScoresCountPoints.isEmpty()) {
+            winnerText = "Ingen har svarat på några frågor denna månad";
+            embed = EmbedCreateSpec.builder().description("-").build();
+        } else {
+            String winner = "<@" + triviaScoresCountPoints.getFirst().getUserId() + ">";
+            Long points = triviaScoresCountPoints.getFirst().getPoints();
+            winnerText = String.format("Månadens trivia vinner %s på %d poäng!, Grattis! :tada:", winner, points);
+            embed = createStandingsEmbed(scoresPeriod.CURRENT_MONTH);
+        }
+
+        client.getChannelById(Snowflake.of(channelId))
+                .ofType(MessageChannel.class)
+                .flatMap(channel -> channel.createMessage()
+                        .withContent(winnerText)
+                        .withEmbeds(embed))
+                .retry(3)
+                .subscribe();
+        return Mono.empty();
+    }
 
 
     enum scoresPeriod {
