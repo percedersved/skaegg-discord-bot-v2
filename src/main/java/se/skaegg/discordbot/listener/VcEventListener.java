@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import se.skaegg.discordbot.entity.Member;
 import se.skaegg.discordbot.entity.VcSubscriptionUser;
+import se.skaegg.discordbot.repository.MemberRepository;
 import se.skaegg.discordbot.repository.VcSubscriptionUsersRepository;
 
 import java.util.List;
@@ -21,16 +22,17 @@ import java.util.List;
 @Component
 public class VcEventListener {
 
-    static final Logger LOG = LoggerFactory.getLogger(VcEventListener.class);
-
     GatewayDiscordClient client;
     VcSubscriptionUsersRepository vcSubscriptionUsersRepository;
+    MemberRepository memberRepository;
 
     public VcEventListener(GatewayDiscordClient client,
-                           VcSubscriptionUsersRepository vcSubscriptionUsersRepository) {
+                           VcSubscriptionUsersRepository vcSubscriptionUsersRepository,
+                           MemberRepository memberRepository) {
         this.client = client;
         client.on(VoiceStateUpdateEvent.class, this::handle).subscribe();
         this.vcSubscriptionUsersRepository = vcSubscriptionUsersRepository;
+        this.memberRepository = memberRepository;
     }
 
     private Mono<Void> handle(VoiceStateUpdateEvent event) {
@@ -42,9 +44,11 @@ public class VcEventListener {
             return Mono.empty();
         }
 
-        List<Member> membersInDb = vcSubscriptionUsers.stream()
+        List<Member> vcSubUsersAsMembers = vcSubscriptionUsers.stream()
                 .map(VcSubscriptionUser::getMember)
                 .toList();
+
+        List<Member> allMembers = memberRepository.findAllByServerId(serverId);
 
         var newState = event.getCurrent();
         var oldState = event.getOld().orElse(null);
@@ -57,22 +61,16 @@ public class VcEventListener {
 
         VoiceChannel newStateVc = newState.getChannel().block();
 
-        Member memberToJoinOrLeave = membersInDb.stream()
+        Member memberToJoinOrLeave = allMembers.stream()
                 .filter(m -> m.getMemberId()
                         .equals(currentUserId))
                 .findFirst()
-                .get();
-
-        VcSubscriptionUser vcSubscriptionUser = vcSubscriptionUsersRepository.findByMemberAndServerId(memberToJoinOrLeave, serverId);
+                .orElseThrow();
 
         EmbedCreateSpec embed;
 
         // If newState doesn't have a channel it means that this event was someone leaving.
         if (newStateVc == null && oldState != null) {
-            // If the user doesn't want DMs when someone leave just return
-            if (!vcSubscriptionUser.isLeaveNotice()) {
-                return Mono.empty();
-            }
 
             List<VcSubscriptionUser> usersWithLeaveNotice = vcSubscriptionUsersRepository.findByLeaveNoticeAndServerId(true, serverId);
             List<Member> membersWithLeaveNotice = usersWithLeaveNotice.stream()
@@ -116,7 +114,7 @@ public class VcEventListener {
             embed = createEmbed(embedDescription);
 
             if (oldState == null || !newState.getChannelId().equals(oldState.getChannelId())) {
-                return pushMessageToMember(membersInDb, currentUserId, embed);
+                return pushMessageToMember(vcSubUsersAsMembers, currentUserId, embed);
             }
         }
 
