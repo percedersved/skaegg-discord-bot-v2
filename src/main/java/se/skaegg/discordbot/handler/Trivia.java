@@ -649,8 +649,8 @@ public class Trivia implements SlashCommand {
     public String getInteractionUser() { return interactionUser; }
 
     public Mono<Void> displayMonthlyWinner(String channelId) {
-        LocalDate fromDate = YearMonth.now().atDay(1);
-        LocalDate toDate = YearMonth.now().atEndOfMonth();
+        LocalDate fromDate = YearMonth.now().minusMonths(1L).atDay(1);
+        LocalDate toDate = YearMonth.now().minusMonths(1L).atEndOfMonth();
 
         List<TriviaScoresCountPoints> triviaScoresCountPoints = triviaScoresRepository.countTotalIdsByAnswerAndDates(fromDate, toDate);
 
