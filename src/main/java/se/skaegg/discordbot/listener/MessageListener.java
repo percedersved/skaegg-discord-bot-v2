@@ -10,15 +10,19 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.channel.MessageChannel;
 import reactor.core.publisher.Mono;
 import se.skaegg.discordbot.handler.EmojiStats;
+import se.skaegg.discordbot.handler.WordleStats;
 
 @Component
 public class MessageListener {
 
     EmojiStats emojiStats;
+    WordleStats wordleStats;
 
     public MessageListener(GatewayDiscordClient client,
-                           EmojiStats emojiStats) {
+                           EmojiStats emojiStats,
+                           WordleStats wordleStats) {
         this.emojiStats = emojiStats;
+        this.wordleStats = wordleStats;
         client.on(MessageCreateEvent.class, this::handle).subscribe();
     }
 
@@ -36,6 +40,8 @@ public class MessageListener {
             while (matcher.find()) {
                     emojiStats.saveEmojiUsage(matcher.group(2), channelId, userId, EmojiStats.emojiUseType.MESSAGE, matcher.group(3));
                 }
+        } else if (msgContent.contains("Your group is on a")) {
+            wordleStats.saveWordleStats(event);
         }
         return Mono.empty();
     }
