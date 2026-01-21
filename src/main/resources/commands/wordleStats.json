@@ -1,0 +1,18 @@
+{
+  "type": 1,
+  "name": "wordlestats",
+  "description": "Statistik för Wordle-frågor",
+  "autocomplete": true,
+  "options": [
+    {
+      "name": "mina",
+      "description": "Visa min statistik",
+      "type": 1
+    },
+    {
+      "name": "snitt",
+      "description": "Visa genomsnittlig statistik för alla användare",
+      "type": 1
+    }
+    ]
+}
